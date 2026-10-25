@@ -310,7 +310,9 @@ export const oxcTransformSpec = () => describe('Oxc transform', () => {
 					reject: false,
 				});
 				expect(exitCode).toBe(1);
-				expect(stderr).toContain(`${originalPath}:3:7`);
+				// esbuild can lowercase Windows drive letters when composing source maps.
+				const normalizeDriveLetter = (value: string) => value.replaceAll(/\b[A-Z]:(?=\\)/g, drive => drive.toLowerCase());
+				expect(normalizeDriveLetter(stderr)).toContain(`${normalizeDriveLetter(originalPath)}:3:7`);
 			});
 
 			test('executes eligible ESM TypeScript', async () => {
