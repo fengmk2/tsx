@@ -8,3 +8,4 @@ Cross-tool synthesis, tsx decisions, compatibility boundaries, and implementatio
 | [node-integration.md](./node-integration.md) | Node feature gates, loader integration, and re-verification points |
 | [cjs-default-import-interop.md](./cjs-default-import-interop.md) | Default-import policy for ambiguous CommonJS `__esModule` exports |
 | [transform-backend.md](./transform-backend.md) | Per-file transform semantics and backend re-verification contract |
+| [oxc-evaluation.md](./oxc-evaluation.md) | Reproducible Oxc migration assessment, compatibility blockers, and performance measurements |

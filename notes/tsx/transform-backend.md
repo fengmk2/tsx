@@ -23,6 +23,8 @@ The CommonJS extension hook transforms TypeScript-family files and JavaScript wi
 
 ## Oxc candidate gates
 
+The [oxc-node evaluation](./oxc-evaluation.md) separately checks `@oxc-node/core@1.0.1` and `oxc-transform@0.155.0`, with executable runtime probes and benchmarks. The two packages expose different APIs and distribution contracts; do not infer core's capabilities from the transform package alone.
+
 | Gate | Status | Evidence |
 | --- | --- | --- |
 | Distribution | Blocked | Node engines, native targets, and fallback behavior do not cover tsx's package contract ([distribution](../oxc-transform/distribution.md), [tsx engines](../../package.json#L71-L76)) |

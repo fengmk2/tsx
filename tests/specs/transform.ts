@@ -4,7 +4,7 @@ import { createFixture } from 'fs-fixture';
 import { execaNode } from 'execa';
 import { Volume } from 'memfs';
 import outdent from 'outdent';
-import { transform, transformSync } from '../../src/utils/transform/index.js';
+import { transform, transformSync, transformEsmSync } from '../../src/utils/transform/index.js';
 import { inlineSourceMap } from '../../src/source-map.js';
 
 const base64Module = (code: string) => `data:text/javascript;base64,${Buffer.from(code).toString('base64')}`;
@@ -41,6 +41,116 @@ const fixtures = {
 };
 
 export const transformSpec = () => describe('transform', () => {
+	describe('backend compatibility', () => {
+		for (const [mode, transformSource] of [
+			['CommonJS', transformSync],
+			['sync ESM', transformEsmSync],
+			['async ESM', transform],
+		] as const) {
+			describe(mode, () => {
+				const load = async (source: string) => {
+					const transformed = await transformSource(source, '/compatibility.ts');
+					return mode === 'CommonJS'
+						? createFsRequire(Volume.fromJSON({
+							'/compatibility.js': transformed.code,
+						}))('/compatibility.js')
+						: import(`${base64Module(transformed.code)}#${encodeURIComponent(mode)}`);
+				};
+
+				test('runs standard decorators and instance initializers', async () => {
+					const loaded = await load(outdent`
+					function decorate(method, context) {
+						context.addInitializer(function () {
+							this.initialized = context.name;
+						});
+						return function () {
+							return method.call(this).toUpperCase();
+						};
+					}
+					class Example {
+						@decorate
+						greet() { return 'hello'; }
+					}
+					const example = new Example();
+					export const result = [example.greet(), example.initialized];
+					`);
+
+					expect(loaded.result).toStrictEqual(['HELLO', 'greet']);
+				});
+
+				test('keeps mutable namespace exports live', async () => {
+					const loaded = await load(outdent`
+					namespace Counter {
+						export let value = 1;
+						export function increment() { value += 1; }
+					}
+					const initial = Counter.value;
+					Counter.increment();
+					const incremented = Counter.value;
+					Counter.value = 7;
+					Counter.increment();
+					export const result = [initial, incremented, Counter.value];
+					`);
+
+					expect(loaded.result).toStrictEqual([1, 2, 8]);
+				});
+
+				test('maps errors after Unicode to the original line and column', async () => {
+					await using fixture = await createFixture();
+					const sourcePath = fixture.getPath('original.ts');
+					const errorLine = 'const icon = "😀"; throw new Error("mapped-error");';
+					const transformed = await transformSource(
+						`export const value: number = 1;\n${errorLine}`,
+						sourcePath,
+					);
+					const outputFile = mode === 'CommonJS' ? 'output.cjs' : 'output.mjs';
+					await fixture.writeFile(outputFile, inlineSourceMap(transformed));
+
+					const { exitCode, stderr } = await execaNode(fixture.getPath(outputFile), {
+						nodeOptions: ['--enable-source-maps'],
+						reject: false,
+					});
+
+					expect(exitCode).toBe(1);
+					expect(stderr).toContain(`${sourcePath}:2:${errorLine.indexOf('new Error') + 1}`);
+				});
+			});
+		}
+
+		test('CommonJS re-exports retain live bindings', () => {
+			const sources = {
+				'/dependency.ts': 'export let value = 1; export const increment = () => { value += 1; };',
+				'/other.ts': 'export const extra = 3; export default "not re-exported";',
+				'/entry.ts': 'export { value, increment } from "./dependency.ts"; export * from "./other.ts";',
+			};
+			const files = Object.fromEntries(Object.entries(sources).map(([filePath, source]) => [
+				filePath,
+				transformSync(source, filePath).code,
+			]));
+			const loaded = createFsRequire(Volume.fromJSON(files))('/entry.ts');
+
+			expect(loaded.value).toBe(1);
+			loaded.increment();
+			expect(loaded.value).toBe(2);
+			expect(loaded.extra).toBe(3);
+			expect(Object.hasOwn(loaded, 'default')).toBe(false);
+		});
+
+		test('assigns export equals after evaluating the module body', () => {
+			const transformed = transformSync(outdent`
+			const original = module.exports;
+			const result = { unchangedDuringEvaluation: false };
+			export = result;
+			result.unchangedDuringEvaluation = module.exports === original;
+			`, '/export-equals.cts');
+			const loaded = createFsRequire(Volume.fromJSON({
+				'/export-equals.cjs': transformed.code,
+			}))('/export-equals.cjs');
+
+			expect(loaded).toStrictEqual({ unchangedDuringEvaluation: true });
+		});
+	});
+
 	describe('sync', () => {
 		test('transforms ESM to CJS', () => {
 			const transformed = transformSync(

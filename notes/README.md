@@ -23,6 +23,7 @@ Create a tool folder when the repository makes independent, reusable claims abou
 | [enhanced-resolve/](./enhanced-resolve/README.md) | webpack enhanced-resolve configuration behavior |
 | [oxc-resolver/](./oxc-resolver/README.md) | oxc-resolver configuration behavior |
 | [oxc-transform/](./oxc-transform/README.md) | Oxc TypeScript transformation and generated-helper behavior |
+| [oxc-node/](./oxc-node/README.md) | oxc-node transformer API, loader behavior, and distribution |
 | [tsx/](./tsx/README.md) | tsx policy, integration, and cross-tool synthesis |
 
 ## Evidence

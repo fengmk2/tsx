@@ -75,3 +75,22 @@ Scenarios below their `minNodeVersion` (e.g. `native-ts` under 22.18.0) are skip
 ## Reproducibility
 
 The tsx transform cache is reset before each tsx scenario's warmup to avoid stale-file skew. Pass `--cache-entries` to instead create an isolated cache, seed it with unrelated entries, and retain it across warmup and timed runs. This mode measures cache initialization and warm lookup scaling without clearing or changing the user's cache. Node baseline scenarios are unaffected. Runs are interleaved after warmup.
+
+## Oxc feasibility measurements
+
+The standalone Oxc comparison uses an external candidate install. It does not add a transformer dependency to tsx:
+
+```sh
+oxc_candidate_dir=$(mktemp -d)
+npm install --prefix "$oxc_candidate_dir" --no-audit --no-fund oxc-transform@0.155.0 @oxc-node/core@1.0.1
+pnpm build
+node scripts/benchmark/oxc.mjs --candidate-dir "$oxc_candidate_dir" --runs 7 --modules 1000 --iterations 500 > oxc-benchmark.json
+```
+
+Run this on an otherwise idle machine. The JSON records the Node version, package versions, CPU, all timed samples, medians, and minima. `--runs`, `--modules`, and `--iterations` accept positive integers; defaults are 5, 300, and 200.
+
+The transform measurements compare synchronous esbuild ESM and CommonJS, Oxc ESM, and Oxc followed by esbuild CommonJS. Both backends generate source maps. The two-pass case passes Oxc's source map into esbuild for composition. Each case receives 20 untimed transforms, then timed batches run in alternating order.
+
+Runtime measurements compare `node --import` hooks on an empty module and a TypeScript ESM tree. They include fresh-process startup, resolution, transformation, and execution; they exclude CLI wrappers. Each process uses the same Node binary. The runner verifies the tree's computed value, alternates implementation order, and isolates each implementation's temporary cache. It compares warm tsx disk cache, cold tsx disk cache, disabled tsx disk cache, and oxc-node (which has no transform cache). Temporary fixtures and caches are removed when the runner exits normally or throws.
+
+These are synthetic performance probes, not compatibility tests. In particular, fast Oxc-only ESM output does not prove equivalent tsx behavior, and a two-pass transform cannot recover runtime imports that its first pass has already removed. Use the semantic evaluation results when deciding whether a candidate can replace tsx's backend.
