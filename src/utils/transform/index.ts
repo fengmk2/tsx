@@ -24,6 +24,7 @@ import {
 	cacheConfig,
 	patchOptions,
 } from './get-esbuild-options.js';
+import { attemptOxcTransform, oxcBackendVersion } from './oxc.js';
 
 const formatEsbuildError = (
 	error: TransformFailure,
@@ -127,6 +128,7 @@ export const transformSync = (
 		url,
 		JSON.stringify(esbuildOptions),
 		esbuildVersion,
+		oxcBackendVersion,
 		transformDynamicImportVersion,
 	].join('-'));
 	let transformed = cache.get(hash);
@@ -137,6 +139,10 @@ export const transformSync = (
 			code,
 			[
 				(_filePath, _code) => {
+					const nativeResult = attemptOxcTransform(_code, esbuildOptions);
+					if (nativeResult) {
+						return nativeResult;
+					}
 					const patchResult = patchOptions(esbuildOptions);
 					let result;
 					try {
@@ -173,6 +179,7 @@ export const transform = async (
 		code,
 		JSON.stringify(esbuildOptions),
 		esbuildVersion,
+		oxcBackendVersion,
 		transformDynamicImportVersion,
 	].join('-'));
 	let transformed = cache.get(hash);
@@ -183,6 +190,10 @@ export const transform = async (
 			code,
 			[
 				async (_filePath, _code) => {
+					const nativeResult = attemptOxcTransform(_code, esbuildOptions);
+					if (nativeResult) {
+						return nativeResult;
+					}
 					const patchResult = patchOptions(esbuildOptions);
 					let result;
 					try {
@@ -218,6 +229,7 @@ export const transformEsmSync = (
 		code,
 		JSON.stringify(esbuildOptions),
 		esbuildVersion,
+		oxcBackendVersion,
 		transformDynamicImportVersion,
 	].join('-'));
 	let transformed = cache.get(hash);
@@ -228,6 +240,10 @@ export const transformEsmSync = (
 			code,
 			[
 				(_filePath, _code) => {
+					const nativeResult = attemptOxcTransform(_code, esbuildOptions);
+					if (nativeResult) {
+						return nativeResult;
+					}
 					const patchResult = patchOptions(esbuildOptions);
 					let result;
 					try {

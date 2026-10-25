@@ -318,10 +318,12 @@ export const createLoad = (
 		if (
 			isCommonJsFormat(loadedFormat)
 			&& fileUrl
-			&& loaded.responseURL?.startsWith('file:') // Could be data:
+			&& (loaded.responseURL ? loaded.responseURL.startsWith('file:') : fileUrl)
 			&& !filePath.endsWith('.cjs') // CJS syntax doesn't need to be transformed for interop
 		) {
-			const code = await readFile(pathToFileURL(filePath), 'utf8');
+			const code = loaded.source === undefined || loaded.source === null
+				? await readFile(pathToFileURL(filePath), 'utf8')
+				: decodeSource(loaded.source);
 			const hasEsmSyntax = isESM(code);
 
 			// if the file extension is .js, only transform if using esm syntax
@@ -411,7 +413,7 @@ export const createLoad = (
 		if (loadedFormat === 'commonjs-typescript') {
 			const transformed = transformSync(
 				code,
-				filePath,
+				getTransformPath(filePath, fileUrl),
 				{
 					tsconfigRaw: getTsconfigRaw(filePath, hookData),
 				},
@@ -515,10 +517,12 @@ export const createLoadSync = (
 		if (
 			isCommonJsFormat(loadedFormat)
 			&& isFeatureSupported(esmLoadReadFile)
-			&& loaded.responseURL?.startsWith('file:') // Could be data:
+			&& (loaded.responseURL ? loaded.responseURL.startsWith('file:') : fileUrl)
 			&& !filePath.endsWith('.cjs') // CJS syntax doesn't need to be transformed for interop
 		) {
-			const code = readFileSync(pathToFileURL(filePath), 'utf8');
+			const code = loaded.source === undefined || loaded.source === null
+				? readFileSync(pathToFileURL(filePath), 'utf8')
+				: decodeSource(loaded.source);
 
 			// if the file extension is .js, only transform if using esm syntax
 			if (loadedFormat === 'commonjs-typescript' || !filePath.endsWith('.js') || isESM(code)) {
@@ -577,7 +581,7 @@ export const createLoadSync = (
 			// so rebuild the surface for a namespaced import.
 			const transformed = transformSync(
 				code,
-				filePath,
+				getTransformPath(filePath, fileUrl),
 				{
 					cjsBanner: (
 						urlNamespace

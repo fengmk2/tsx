@@ -4,7 +4,13 @@ The transform-backend contract owns tsx's per-file integration semantics and bac
 
 ## Current integration boundary
 
-tsx uses esbuild's per-file APIs with CommonJS options in `transformSync()` and ESM options in `transform()` ([CJS path](../../src/utils/transform/index.ts#L60-L94), [ESM path](../../src/utils/transform/index.ts#L142-L180)). The target is the running Node version ([configuration](../../src/utils/transform/get-esbuild-options.ts#L7-L13)); cache keys include source identity, transform options, esbuild version, and dynamic-import transformer version ([sync key](../../src/utils/transform/index.ts#L108-L114), [async key](../../src/utils/transform/index.ts#L155-L160)).
+The draft first attempts the [native Oxc adapter](../../native/transform/README.md)
+on transform-cache misses. Its original-AST gate accepts eligible ESM and
+already-CommonJS sources. Module conversion and unsupported inputs retain
+esbuild's per-file APIs. The [shared integration](../../src/utils/transform/index.ts)
+targets the running Node version; cache keys include source identity, transform
+options, the native protocol/compiler identity, esbuild version, and dynamic-import
+transformer version. Warm cache reads do not initialize the native addon.
 
 The shared configuration enables source maps, whitespace minification, and `keepNames` without identifier or syntax minification ([options](../../src/utils/transform/get-esbuild-options.ts#L21-L50)).
 

@@ -1,0 +1,637 @@
+{
+	"metadata": {
+		"node": "v24.22.1",
+		"platform": "darwin",
+		"arch": "arm64",
+		"cpu": "Apple M4 Max",
+		"baseline": "8e4b900",
+		"nativeProtocol": "oxc-0.155.0:tsx-native-3",
+		"entry": "tsx CLI",
+		"modules": 1000,
+		"runs": 7
+	},
+	"measurements": {
+		"cold": {
+			"meta": {
+				"runs": 7,
+				"cold": true,
+				"cacheEntries": 0,
+				"scale": false,
+				"specifier": "ts"
+			},
+			"rows": [
+				{
+					"scenario": "esm-ts",
+					"nodeVersion": "24.22.1",
+					"impl": "native draft",
+					"moduleCount": 1000,
+					"results": [
+						{
+							"wallMs": 244.27791699999995,
+							"maxRssKb": 100704,
+							"loadMs": 185.14275,
+							"evalMs": 0.604124999999982
+						},
+						{
+							"wallMs": 244.64433399999996,
+							"maxRssKb": 100704,
+							"loadMs": 184.420625,
+							"evalMs": 0.6031250000000057
+						},
+						{
+							"wallMs": 252.2883750000001,
+							"maxRssKb": 100880,
+							"loadMs": 193.058167,
+							"evalMs": 0.6341659999999933
+						},
+						{
+							"wallMs": 257.548667,
+							"maxRssKb": 100672,
+							"loadMs": 194.139084,
+							"evalMs": 0.6556250000000148
+						},
+						{
+							"wallMs": 265.97950000000014,
+							"maxRssKb": 101120,
+							"loadMs": 197.808041,
+							"evalMs": 0.6003749999999854
+						},
+						{
+							"wallMs": 262.4551250000002,
+							"maxRssKb": 100512,
+							"loadMs": 197.265917,
+							"evalMs": 0.6830410000000029
+						},
+						{
+							"wallMs": 260.105458,
+							"maxRssKb": 100432,
+							"loadMs": 196.474292,
+							"evalMs": 0.6005830000000003
+						}
+					]
+				},
+				{
+					"scenario": "esm-ts",
+					"nodeVersion": "24.22.1",
+					"impl": "esbuild baseline",
+					"moduleCount": 1000,
+					"results": [
+						{
+							"wallMs": 545.9595829999998,
+							"maxRssKb": 125520,
+							"loadMs": 481.830459,
+							"evalMs": 0.5619580000000042
+						},
+						{
+							"wallMs": 540.6034579999996,
+							"maxRssKb": 124592,
+							"loadMs": 477.06125,
+							"evalMs": 0.5614590000000135
+						},
+						{
+							"wallMs": 542.5841250000003,
+							"maxRssKb": 125008,
+							"loadMs": 481.913875,
+							"evalMs": 0.5485830000000078
+						},
+						{
+							"wallMs": 547.225375,
+							"maxRssKb": 124880,
+							"loadMs": 488.2145,
+							"evalMs": 0.5472080000000119
+						},
+						{
+							"wallMs": 543.7047499999999,
+							"maxRssKb": 124768,
+							"loadMs": 480.050792,
+							"evalMs": 0.5756250000000023
+						},
+						{
+							"wallMs": 546.2138329999998,
+							"maxRssKb": 124288,
+							"loadMs": 483.531417,
+							"evalMs": 0.5558750000000146
+						},
+						{
+							"wallMs": 552.0611249999993,
+							"maxRssKb": 124992,
+							"loadMs": 491.537417,
+							"evalMs": 0.5510409999999979
+						}
+					]
+				},
+				{
+					"scenario": "cjs-require",
+					"nodeVersion": "24.22.1",
+					"impl": "native draft",
+					"moduleCount": 1000,
+					"results": [
+						{
+							"wallMs": 254.13374999999996,
+							"maxRssKb": 101024,
+							"loadMs": 32.998834,
+							"evalMs": 160.769791
+						},
+						{
+							"wallMs": 260.8017920000002,
+							"maxRssKb": 102448,
+							"loadMs": 32.645459,
+							"evalMs": 165.515
+						},
+						{
+							"wallMs": 259.57524999999987,
+							"maxRssKb": 100720,
+							"loadMs": 32.803291,
+							"evalMs": 169.007084
+						},
+						{
+							"wallMs": 251.6958340000001,
+							"maxRssKb": 101520,
+							"loadMs": 33.682166,
+							"evalMs": 159.814917
+						},
+						{
+							"wallMs": 277.7787499999995,
+							"maxRssKb": 100800,
+							"loadMs": 33.088875,
+							"evalMs": 184.346125
+						},
+						{
+							"wallMs": 249.89466700000048,
+							"maxRssKb": 102000,
+							"loadMs": 32.439917,
+							"evalMs": 160.36012499999998
+						},
+						{
+							"wallMs": 252.12620900000002,
+							"maxRssKb": 101088,
+							"loadMs": 33.157209,
+							"evalMs": 159.303416
+						}
+					]
+				},
+				{
+					"scenario": "cjs-require",
+					"nodeVersion": "24.22.1",
+					"impl": "esbuild baseline",
+					"moduleCount": 1000,
+					"results": [
+						{
+							"wallMs": 537.9994580000002,
+							"maxRssKb": 120976,
+							"loadMs": 55.201458,
+							"evalMs": 425.73479199999997
+						},
+						{
+							"wallMs": 570.460916,
+							"maxRssKb": 124720,
+							"loadMs": 55.143958,
+							"evalMs": 456.4135
+						},
+						{
+							"wallMs": 554.8670419999999,
+							"maxRssKb": 123488,
+							"loadMs": 54.207917,
+							"evalMs": 440.893
+						},
+						{
+							"wallMs": 558.4321660000005,
+							"maxRssKb": 125472,
+							"loadMs": 55.199833,
+							"evalMs": 442.405209
+						},
+						{
+							"wallMs": 535.8295830000006,
+							"maxRssKb": 119632,
+							"loadMs": 55.165083,
+							"evalMs": 422.21125
+						},
+						{
+							"wallMs": 550.580417000001,
+							"maxRssKb": 124864,
+							"loadMs": 54.488958,
+							"evalMs": 435.6105
+						},
+						{
+							"wallMs": 543.1432910000003,
+							"maxRssKb": 125136,
+							"loadMs": 55.706792,
+							"evalMs": 428.937291
+						}
+					]
+				},
+				{
+					"scenario": "hooks-passthrough",
+					"nodeVersion": "24.22.1",
+					"impl": "native draft",
+					"moduleCount": 1000,
+					"results": [
+						{
+							"wallMs": 126.8955420000002,
+							"maxRssKb": 81056,
+							"loadMs": 79.507083,
+							"evalMs": 0.594458000000003
+						},
+						{
+							"wallMs": 126.56483300000036,
+							"maxRssKb": 81232,
+							"loadMs": 79.176416,
+							"evalMs": 0.5632919999999899
+						},
+						{
+							"wallMs": 126.43804199999977,
+							"maxRssKb": 81168,
+							"loadMs": 78.9555,
+							"evalMs": 0.6048329999999993
+						},
+						{
+							"wallMs": 130.93941599999926,
+							"maxRssKb": 81072,
+							"loadMs": 80.287125,
+							"evalMs": 0.5929160000000024
+						},
+						{
+							"wallMs": 125.10870799999975,
+							"maxRssKb": 81152,
+							"loadMs": 78.229583,
+							"evalMs": 0.5839169999999996
+						},
+						{
+							"wallMs": 128.10458300000028,
+							"maxRssKb": 81024,
+							"loadMs": 79.878958,
+							"evalMs": 0.5992499999999978
+						},
+						{
+							"wallMs": 131.63683300000048,
+							"maxRssKb": 81088,
+							"loadMs": 81.212916,
+							"evalMs": 0.5825419999999895
+						}
+					]
+				},
+				{
+					"scenario": "hooks-passthrough",
+					"nodeVersion": "24.22.1",
+					"impl": "esbuild baseline",
+					"moduleCount": 1000,
+					"results": [
+						{
+							"wallMs": 126.88600000000042,
+							"maxRssKb": 81168,
+							"loadMs": 79.956791,
+							"evalMs": 0.6143339999999995
+						},
+						{
+							"wallMs": 128.49312499999905,
+							"maxRssKb": 81136,
+							"loadMs": 81.620083,
+							"evalMs": 0.6045000000000016
+						},
+						{
+							"wallMs": 126.54891599999974,
+							"maxRssKb": 81104,
+							"loadMs": 79.4825,
+							"evalMs": 0.6125420000000048
+						},
+						{
+							"wallMs": 127.20012499999939,
+							"maxRssKb": 81152,
+							"loadMs": 79.895625,
+							"evalMs": 0.6040830000000028
+						},
+						{
+							"wallMs": 127.61674999999923,
+							"maxRssKb": 81088,
+							"loadMs": 80.071333,
+							"evalMs": 0.5929169999999999
+						},
+						{
+							"wallMs": 127.24091700000099,
+							"maxRssKb": 81104,
+							"loadMs": 79.446083,
+							"evalMs": 0.6074579999999941
+						},
+						{
+							"wallMs": 130.25320900000042,
+							"maxRssKb": 81168,
+							"loadMs": 83.5765,
+							"evalMs": 0.6370840000000015
+						}
+					]
+				}
+			]
+		},
+		"warm": {
+			"meta": {
+				"runs": 7,
+				"cold": false,
+				"cacheEntries": 0,
+				"scale": false,
+				"specifier": "ts"
+			},
+			"rows": [
+				{
+					"scenario": "esm-ts",
+					"nodeVersion": "24.22.1",
+					"impl": "native draft",
+					"moduleCount": 1000,
+					"results": [
+						{
+							"wallMs": 148.99645800000002,
+							"maxRssKb": 88784,
+							"loadMs": 100.346791,
+							"evalMs": 0.5905000000000058
+						},
+						{
+							"wallMs": 145.23916699999995,
+							"maxRssKb": 88752,
+							"loadMs": 98.317708,
+							"evalMs": 0.5809580000000096
+						},
+						{
+							"wallMs": 144.906875,
+							"maxRssKb": 88640,
+							"loadMs": 98.47575,
+							"evalMs": 0.5762919999999951
+						},
+						{
+							"wallMs": 145.2584159999999,
+							"maxRssKb": 88704,
+							"loadMs": 99.044208,
+							"evalMs": 0.617834000000002
+						},
+						{
+							"wallMs": 146.06683399999997,
+							"maxRssKb": 88688,
+							"loadMs": 100.0755,
+							"evalMs": 0.5977499999999907
+						},
+						{
+							"wallMs": 147.1579999999999,
+							"maxRssKb": 88720,
+							"loadMs": 100.314583,
+							"evalMs": 0.5939999999999941
+						},
+						{
+							"wallMs": 161.99575000000004,
+							"maxRssKb": 85776,
+							"loadMs": 114.109166,
+							"evalMs": 0.6150420000000025
+						}
+					]
+				},
+				{
+					"scenario": "esm-ts",
+					"nodeVersion": "24.22.1",
+					"impl": "esbuild baseline",
+					"moduleCount": 1000,
+					"results": [
+						{
+							"wallMs": 149.80191699999978,
+							"maxRssKb": 86512,
+							"loadMs": 101.68825,
+							"evalMs": 0.57650000000001
+						},
+						{
+							"wallMs": 143.56395799999973,
+							"maxRssKb": 88720,
+							"loadMs": 98.001667,
+							"evalMs": 0.6044580000000082
+						},
+						{
+							"wallMs": 146.85158299999966,
+							"maxRssKb": 85952,
+							"loadMs": 99.677041,
+							"evalMs": 0.5966250000000031
+						},
+						{
+							"wallMs": 150.1160829999999,
+							"maxRssKb": 85856,
+							"loadMs": 101.407542,
+							"evalMs": 0.573291999999995
+						},
+						{
+							"wallMs": 147.80483300000014,
+							"maxRssKb": 87872,
+							"loadMs": 99.909792,
+							"evalMs": 0.5687080000000009
+						},
+						{
+							"wallMs": 146.39975000000004,
+							"maxRssKb": 88784,
+							"loadMs": 99.587709,
+							"evalMs": 0.5931659999999965
+						},
+						{
+							"wallMs": 155.52024999999958,
+							"maxRssKb": 85488,
+							"loadMs": 108.164125,
+							"evalMs": 0.579583999999997
+						}
+					]
+				},
+				{
+					"scenario": "cjs-require",
+					"nodeVersion": "24.22.1",
+					"impl": "native draft",
+					"moduleCount": 1000,
+					"results": [
+						{
+							"wallMs": 146.7574999999997,
+							"maxRssKb": 83680,
+							"loadMs": 30.218875,
+							"evalMs": 68.100875
+						},
+						{
+							"wallMs": 148.41479200000003,
+							"maxRssKb": 85536,
+							"loadMs": 32.869666,
+							"evalMs": 67.323834
+						},
+						{
+							"wallMs": 144.30870800000002,
+							"maxRssKb": 85056,
+							"loadMs": 29.420125,
+							"evalMs": 66.073042
+						},
+						{
+							"wallMs": 142.49879199999987,
+							"maxRssKb": 85088,
+							"loadMs": 29.486542,
+							"evalMs": 65.603542
+						},
+						{
+							"wallMs": 143.53562499999998,
+							"maxRssKb": 85168,
+							"loadMs": 29.313166,
+							"evalMs": 66.99733400000001
+						},
+						{
+							"wallMs": 143.4664589999993,
+							"maxRssKb": 83200,
+							"loadMs": 29.2595,
+							"evalMs": 66.758375
+						},
+						{
+							"wallMs": 140.24595800000043,
+							"maxRssKb": 85264,
+							"loadMs": 28.662667,
+							"evalMs": 65.214958
+						}
+					]
+				},
+				{
+					"scenario": "cjs-require",
+					"nodeVersion": "24.22.1",
+					"impl": "esbuild baseline",
+					"moduleCount": 1000,
+					"results": [
+						{
+							"wallMs": 143.75904199999968,
+							"maxRssKb": 85088,
+							"loadMs": 28.91925,
+							"evalMs": 66.411417
+						},
+						{
+							"wallMs": 164.8917080000001,
+							"maxRssKb": 85184,
+							"loadMs": 35.522334,
+							"evalMs": 74.432708
+						},
+						{
+							"wallMs": 166.32379200000014,
+							"maxRssKb": 83712,
+							"loadMs": 33.766625,
+							"evalMs": 72.577708
+						},
+						{
+							"wallMs": 157.48108299999967,
+							"maxRssKb": 84912,
+							"loadMs": 33.195209,
+							"evalMs": 72.646875
+						},
+						{
+							"wallMs": 160.4355830000004,
+							"maxRssKb": 84080,
+							"loadMs": 34.019167,
+							"evalMs": 76.235667
+						},
+						{
+							"wallMs": 144.41550000000007,
+							"maxRssKb": 83504,
+							"loadMs": 29.200625,
+							"evalMs": 67.277791
+						},
+						{
+							"wallMs": 151.2413749999996,
+							"maxRssKb": 85152,
+							"loadMs": 31.557042,
+							"evalMs": 70.140958
+						}
+					]
+				},
+				{
+					"scenario": "hooks-passthrough",
+					"nodeVersion": "24.22.1",
+					"impl": "native draft",
+					"moduleCount": 1000,
+					"results": [
+						{
+							"wallMs": 125.11599999999999,
+							"maxRssKb": 81152,
+							"loadMs": 76.360417,
+							"evalMs": 0.6186250000000086
+						},
+						{
+							"wallMs": 122.70783299999948,
+							"maxRssKb": 81184,
+							"loadMs": 74.4265,
+							"evalMs": 0.5679169999999942
+						},
+						{
+							"wallMs": 122.88941599999998,
+							"maxRssKb": 81104,
+							"loadMs": 75.232541,
+							"evalMs": 0.6287090000000006
+						},
+						{
+							"wallMs": 122.58708300000035,
+							"maxRssKb": 81024,
+							"loadMs": 75.2995,
+							"evalMs": 0.555917000000008
+						},
+						{
+							"wallMs": 125.25354200000038,
+							"maxRssKb": 81120,
+							"loadMs": 77.625584,
+							"evalMs": 0.605290999999994
+						},
+						{
+							"wallMs": 125.5957499999995,
+							"maxRssKb": 81184,
+							"loadMs": 77.125834,
+							"evalMs": 0.6333750000000009
+						},
+						{
+							"wallMs": 124.35358300000007,
+							"maxRssKb": 81120,
+							"loadMs": 77.086625,
+							"evalMs": 0.6236669999999975
+						}
+					]
+				},
+				{
+					"scenario": "hooks-passthrough",
+					"nodeVersion": "24.22.1",
+					"impl": "esbuild baseline",
+					"moduleCount": 1000,
+					"results": [
+						{
+							"wallMs": 123.98404200000004,
+							"maxRssKb": 81168,
+							"loadMs": 76.156834,
+							"evalMs": 0.6183329999999927
+						},
+						{
+							"wallMs": 124.70633300000009,
+							"maxRssKb": 81120,
+							"loadMs": 77.602375,
+							"evalMs": 0.558125000000004
+						},
+						{
+							"wallMs": 124.54533400000037,
+							"maxRssKb": 81040,
+							"loadMs": 74.868209,
+							"evalMs": 0.585125000000005
+						},
+						{
+							"wallMs": 124.22062499999993,
+							"maxRssKb": 81168,
+							"loadMs": 76.586917,
+							"evalMs": 0.5789999999999935
+						},
+						{
+							"wallMs": 122.52300000000014,
+							"maxRssKb": 81152,
+							"loadMs": 74.907292,
+							"evalMs": 0.5721670000000074
+						},
+						{
+							"wallMs": 120.88404200000059,
+							"maxRssKb": 81152,
+							"loadMs": 72.599875,
+							"evalMs": 0.5657920000000018
+						},
+						{
+							"wallMs": 123.22462499999892,
+							"maxRssKb": 81216,
+							"loadMs": 75.710334,
+							"evalMs": 0.5964159999999907
+						}
+					]
+				}
+			]
+		}
+	}
+}

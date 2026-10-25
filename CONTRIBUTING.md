@@ -94,9 +94,18 @@ pnpm i     # Install dependencies
 
 Build the source code with:
 
+The draft Oxc implementation also builds a native transformer. Install Rust with
+`rustup` before building. Cargo uses the pinned toolchain in
+`native/transform/rust-toolchain.toml`; npm consumers do not compile Rust.
+
 ```bash
 pnpm build # Compiles to `dist`
 ```
+
+`pnpm build:native` builds only the native transformer for the current platform.
+The loader uses esbuild when a compatible native artifact is unavailable. The
+current draft does not yet assemble native artifacts for multiple platforms into
+one release, so do not treat a local build as a completed distribution pipeline.
 
 > [!TIP]
 > Temporarily disable minification by removing `--minify` in `package.json#scripts.build` for easier debugging.

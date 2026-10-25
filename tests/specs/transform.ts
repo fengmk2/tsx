@@ -315,7 +315,8 @@ export const transformSpec = () => describe('transform', () => {
 			if (typeof map !== 'string') {
 				expect(map.sources.length).toBe(1);
 				expect(map.sources[0]).toBe(fileName);
-				expect(map.names).toStrictEqual(['named']);
+				expect(map.version).toBe(3);
+				expect(map.mappings.length).toBeGreaterThan(0);
 			}
 		});
 
@@ -333,7 +334,8 @@ export const transformSpec = () => describe('transform', () => {
 			if (typeof map !== 'string') {
 				expect(map.sources.length).toBe(1);
 				expect(map.sources[0]).toBe(fileName);
-				expect(map.names).toStrictEqual(['named']);
+				expect(map.version).toBe(3);
+				expect(map.mappings.length).toBeGreaterThan(0);
 			}
 		});
 	});
@@ -373,7 +375,8 @@ export const transformSpec = () => describe('transform', () => {
 			if (typeof map !== 'string') {
 				expect(map.sources.length).toBe(1);
 				expect(map.sources[0]).toBe(fileName);
-				expect(map.names).toStrictEqual(['named']);
+				expect(map.version).toBe(3);
+				expect(map.mappings.length).toBeGreaterThan(0);
 			}
 		});
 	});

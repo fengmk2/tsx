@@ -1,10 +1,62 @@
 # Oxc-based tsx feasibility
 
-## Decision
+## Draft implementation
+
+The draft now includes a [native Oxc adapter](../../native/transform/README.md),
+[per-file option mapping](../../src/utils/transform/oxc.ts), and integration into
+all three transform entry points. It retains tsx's loaders, resolver, public APIs,
+and cache. A native AST gate selects eligible ESM and already-CommonJS sources;
+other inputs use the original esbuild transform on the unchanged source.
+
+The adapter uses the same Oxc compiler as oxc-node. It supplies the per-call
+configuration and pre-transform AST capability check that the published packages
+lack. It does not install oxc-node's hooks or introduce a second source parser.
+The complete native replacement and multi-platform release pipeline remain
+unfinished. The implementation is kept in the fork's draft PR.
+
+## Integrated draft measurements
+
+[The native-adapter measurements](./native-benchmark.json) compare this draft with
+`8e4b900` on the same Node `24.22.1` executable and Apple M4 Max. Each cell contains
+seven fresh-process runs over 1,000 modules. These measurements include the tsx
+CLI, unlike the upstream comparison below. The existing benchmark runner groups
+samples by implementation; small warm-cache differences should not be treated as
+established speed improvements.
+
+| Workload | esbuild baseline median | Native draft median |
+| --- | ---: | ---: |
+| ESM TypeScript, cold transform cache | 545.96 ms | 257.55 ms |
+| CommonJS TypeScript, cold transform cache | 550.58 ms | 254.13 ms |
+| ESM TypeScript, warm cache | 147.80 ms | 146.07 ms |
+| CommonJS TypeScript, warm cache | 157.48 ms | 143.54 ms |
+| JavaScript passthrough, warm cache | 123.98 ms | 124.35 ms |
+
+The cold TypeScript cases take approximately half the baseline time. Warm-cache
+and passthrough behavior remain close to the baseline. Unsupported syntax still
+uses esbuild and can incur an extra eligibility parse on cache misses; these
+figures do not predict performance for every source mix.
+
+To repeat this comparison, build a separate checkout of `8e4b900`, then run:
+
+```sh
+node ./dist/cli.mjs scripts/benchmark/index.ts \
+  esm-ts cjs-require hooks-passthrough --compare /path/to/baseline \
+  --modules 1000 --runs 7 --cold --json
+```
+
+Repeat without `--cold` for warm-cache measurements. Use a short, disposable
+`TMPDIR` to isolate the transform cache; long Unix socket paths exceed the CLI
+IPC path limit on macOS. No tests or builds ran concurrently with the recorded
+measurements.
+
+## Initial upstream assessment
 
 The current Oxc packages can accelerate some TypeScript workloads, but they cannot replace tsx's backend while preserving its full behavior. Do not switch the production backend on the strength of ESM benchmarks. This assessment covers npm `@oxc-node/core@1.0.1`, `oxc-transform@0.155.0`, and the tsx checkout at `4473971` with `esbuild@0.28.0`, reviewed on 2026-10-25. The [oxc-node source revision and APIs](../oxc-node/README.md) are recorded separately.
 
-The implementation condition is full compatibility, not just faster execution of a supported subset. The current evaluation fails that condition. The changes therefore provide executable evaluation tools and regression coverage; they do not add a candidate dependency to tsx or change its runtime.
+The initial evaluation did not establish full compatibility for either published
+package. The following upstream comparisons and raw measurements describe the
+original esbuild-only checkout, not the new native adapter. They remain useful
+for identifying the compiler gaps that the draft must address or delegate.
 
 ## Observable compatibility
 
@@ -82,7 +134,20 @@ These are medians after warmup, without tsx's transform cache. Both transformers
 
 The added [transform regression tests](../../tests/specs/transform.ts) exercise standard decorators, mutable namespaces, and Unicode stack locations through CommonJS, synchronous ESM, and asynchronous ESM. They also check live CommonJS re-exports and existing export-assignment timing. The focused transform/cache run passes all 33 tests.
 
-The full local suite reports 229 passes and two failures on Node `24.22.1`: hook-composition observations and CommonJS namespace markers in `tsImport`. Both failures reproduce individually after archiving clean `4473971`, rebuilding, and running with the same Node executable. They are baseline failures, not evidence of an Oxc regression or a successful complete compatibility run. No production code is changed by this evaluation.
+The initial full local suite reported 229 passes and two failures on Node
+`24.22.1`: hook-composition observations and CommonJS namespace markers in
+`tsImport`. Both reproduced on clean `4473971`. The draft now preserves CommonJS
+classification and URL queries when another load hook omits `responseURL`, and
+checks equivalent source representations across Node versions. The current
+version-sensitive suite passes on Node `24.15.0` and `24.22.1`.
+
+The integrated draft passes the expanded local CI matrix: 533 parent-runner tests,
+with transform suites executed inside Node `18.20.8`, `20.20.2`, `21.7.3`,
+`22.22.3`, `24.22.1`, `25.9.0`, and `26.1.0`. The native compiler also has ten Rust
+gate tests. Type-check and lint pass. A packed-package smoke check exercises both
+module formats with and without the native artifact. A separate 140-case runtime
+comparison covers accepted native output and compatibility fallback; its findings
+are retained as import/re-export side-effect regressions in the suite.
 
 ## Conditions for a production implementation
 

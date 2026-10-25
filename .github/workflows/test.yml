@@ -15,7 +15,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
-    timeout-minutes: 10
+    timeout-minutes: 20
 
     steps:
       - name: Checkout
@@ -51,6 +51,10 @@ jobs:
 
       - name: Test
         run: pnpm test
+
+      - name: Test native compiler
+        working-directory: native/transform
+        run: cargo test --release --locked
 
       - name: Type check
         if: ${{ matrix.os == 'ubuntu-latest' }}

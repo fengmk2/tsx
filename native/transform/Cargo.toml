@@ -1,0 +1,24 @@
+[package]
+name = "tsx_transform"
+version = "0.1.0"
+edition = "2024"
+publish = false
+license = "MIT"
+description = "Single-parse Oxc transformation with tsx compatibility gates"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+napi = { version = "=3.15.0", default-features = false, features = ["napi3"] }
+napi-derive = { version = "=3.6.13", default-features = false }
+oxc = { version = "=0.155.0", features = ["ast_visit", "codegen", "semantic", "transformer"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[build-dependencies]
+napi-build = "2"
+
+[profile.release]
+lto = "thin"
+strip = "symbols"

@@ -16,6 +16,7 @@ export const versionSensitiveTests = (node: NodeApis) => describe('Version-sensi
 	if (node.supports.moduleRegisterHooksCjsReload) {
 		test('composes with other registerHooks loaders', async () => {
 			await using fixture = await createFixture({
+				'package.json': createPackageJson({ type: 'commonjs' }),
 				'observer.mjs': `
 					import { registerHooks } from 'node:module';
 
@@ -30,8 +31,9 @@ export const versionSensitiveTests = (node: NodeApis) => describe('Version-sensi
 							if (specifier.endsWith('.ts')) {
 								record({
 									hook: 'resolve',
-									specifier,
-									format: result.format ?? null,
+									// Node can enter the CJS bridge with a file URL or
+									// the original relative request. Both identify the same module.
+									specifier: new URL(specifier, context.parentURL).href,
 								});
 							}
 							return result;
@@ -43,7 +45,9 @@ export const versionSensitiveTests = (node: NodeApis) => describe('Version-sensi
 									hook: 'load',
 									file: url.slice(url.lastIndexOf('/') + 1),
 									format: result.format ?? null,
-									sourceType: typeof result.source,
+									sourceIsText: typeof result.source === 'string'
+										|| result.source instanceof ArrayBuffer
+										|| ArrayBuffer.isView(result.source),
 								});
 							}
 							return result;
@@ -59,7 +63,7 @@ export const versionSensitiveTests = (node: NodeApis) => describe('Version-sensi
 
 					console.log(\`entry:\${value}\`);
 					`,
-				'value.ts': 'export const value: string = "loaded";',
+				'value.ts': 'export const value: string = typeof require === "function" ? "loaded" : "not-commonjs";',
 			});
 
 			const run = async (
@@ -86,24 +90,22 @@ export const versionSensitiveTests = (node: NodeApis) => describe('Version-sensi
 					{
 						hook: 'resolve',
 						specifier: pathToFileURL(fixture.getPath('entry.ts')).toString(),
-						format: null,
 					},
 					{
 						hook: 'load',
 						file: 'entry.ts',
 						format: 'commonjs',
-						sourceType: 'object',
+						sourceIsText: true,
 					},
 					{
 						hook: 'resolve',
 						specifier: pathToFileURL(fixture.getPath('value.ts')).toString(),
-						format: null,
 					},
 					{
 						hook: 'load',
 						file: 'value.ts',
 						format: 'commonjs',
-						sourceType: 'object',
+						sourceIsText: true,
 					},
 				],
 			);
@@ -113,24 +115,22 @@ export const versionSensitiveTests = (node: NodeApis) => describe('Version-sensi
 					{
 						hook: 'resolve',
 						specifier: pathToFileURL(fixture.getPath('entry.ts')).toString(),
-						format: 'commonjs',
 					},
 					{
 						hook: 'load',
 						file: 'entry.ts',
 						format: 'commonjs',
-						sourceType: 'string',
+						sourceIsText: true,
 					},
 					{
 						hook: 'resolve',
 						specifier: pathToFileURL(fixture.getPath('value.ts')).toString(),
-						format: 'commonjs',
 					},
 					{
 						hook: 'load',
 						file: 'value.ts',
 						format: 'commonjs',
-						sourceType: 'string',
+						sourceIsText: true,
 					},
 				],
 			);
@@ -1669,6 +1669,14 @@ export const versionSensitiveTests = (node: NodeApis) => describe('Version-sensi
 
 				const first = await tsImport('./file.ts', import.meta.url);
 				const second = await tsImport('./file.ts', import.meta.url);
+				// ESM and CommonJS carry their scoped identity with different keys.
+				// Node can evaluate this module through either bridge.
+				const getNamespace = (url) => {
+					const parameters = new URL(url).searchParams;
+					return parameters.get('tsx-namespace') ?? parameters.get('namespace');
+				};
+				const firstNamespace = getNamespace(first.url);
+				const secondNamespace = getNamespace(second.url);
 				const plainLoaded = await import('./file.ts').then(
 					() => true,
 					() => false,
@@ -1677,12 +1685,13 @@ export const versionSensitiveTests = (node: NodeApis) => describe('Version-sensi
 				console.log(JSON.stringify({
 					first: {
 						count: first.count,
-						namespaced: first.url.includes('tsx-namespace='),
+						namespaced: Boolean(firstNamespace),
 					},
 					second: {
 						count: second.count,
-						namespaced: second.url.includes('tsx-namespace='),
+						namespaced: Boolean(secondNamespace),
 					},
+					distinctNamespaces: firstNamespace !== secondNamespace,
 					plainLoaded,
 				}));
 				`,
@@ -1712,11 +1721,66 @@ export const versionSensitiveTests = (node: NodeApis) => describe('Version-sensi
 				count: 2,
 				namespaced: true,
 			},
+			distinctNamespaces: true,
 			plainLoaded: false,
 		});
 	});
 
 	if (node.supports.moduleRegisterHooksCjsReload) {
+		test('tsImport preserves URL queries when a composed TypeScript load hook omits responseURL', async () => {
+			await using fixture = await createFixture({
+				'package.json': createPackageJson({ type: 'commonjs' }),
+				'file.ts': `
+					export const value: number = 42;
+					export const url = import.meta.url;
+					`,
+				'import.mjs': `
+					import { registerHooks } from 'node:module';
+					import { readFileSync } from 'node:fs';
+					import { fileURLToPath } from 'node:url';
+					import { tsImport } from ${JSON.stringify(tsxEsmApiPath)};
+
+					registerHooks({
+						load(url, context, nextLoad) {
+							if (new URL(url).pathname.endsWith('/file.ts')) {
+								return {
+									format: 'commonjs-typescript',
+									source: readFileSync(fileURLToPath(url), 'utf8'),
+									shortCircuit: true,
+								};
+							}
+							return nextLoad(url, context);
+						},
+					});
+
+					const result = await tsImport('./file.ts?user=42', import.meta.url);
+					const url = new URL(result.url);
+					const namespaced = url.searchParams.has('tsx-namespace') || url.searchParams.has('namespace');
+					url.searchParams.delete('tsx-namespace');
+					url.searchParams.delete('namespace');
+					console.log(JSON.stringify({
+						value: result.value,
+						url: url.href,
+						namespaced,
+					}));
+					`,
+			});
+
+			const process = await execaNode(fixture.getPath('import.mjs'), [], {
+				nodePath: node.path,
+				nodeOptions: ['--no-warnings'],
+				reject: false,
+			});
+
+			expect(process.exitCode).toBe(0);
+			expect(process.stderr).toBe('');
+			expect(JSON.parse(process.stdout)).toEqual({
+				value: 42,
+				url: `${pathToFileURL(fixture.getPath('file.ts'))}?user=42`,
+				namespaced: true,
+			});
+		});
+
 		// https://github.com/privatenumber/tsx/issues/821
 		test('tsImport loads CommonJS TypeScript after the global ESM preload', async () => {
 			await using fixture = await createFixture({
