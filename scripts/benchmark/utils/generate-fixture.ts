@@ -105,6 +105,58 @@ export const cjsTree = (
 };
 
 /**
+ * Every module, including the entry, uses a mutable runtime namespace. Oxc's
+ * AST eligibility check rejects it, so cache misses transform with esbuild.
+ */
+export const fallbackTree = (
+	moduleCount: number,
+	format: 'esm' | 'cjs',
+	specifierStyle: SpecifierStyle = 'ts',
+): FileTree => {
+	const toSpecifier = specifierByStyle[specifierStyle];
+	const files: FileTree = {};
+
+	for (let index = 0; index < moduleCount; index += 1) {
+		const children = childrenOf(index, moduleCount);
+		const imports = children.map((child, position) => (
+			format === 'esm'
+				? `import { value as v${position} } from '${toSpecifier(`module-${child}`)}';`
+				: `const { value: v${position} } = require('./module-${child}.ts');`
+		)).join('\n');
+		const initial = children.length > 0 ? children.map((_, position) => `v${position}`).join(' + ') : '0';
+		const exportValue = format === 'esm'
+			? 'export const value: number = Counter.value;'
+			: 'module.exports = { value: Counter.value };';
+		files[`module-${index}.ts`] = `${imports}
+${evalMark}
+namespace Counter {
+	export let value: number = ${initial};
+	export function increment() { value += 1; }
+}
+Counter.increment();
+${exportValue}
+`;
+	}
+
+	const importRoot = format === 'esm'
+		? `import { value } from '${toSpecifier('module-0')}';`
+		: "const { value } = require('./module-0.ts');";
+	files['main.ts'] = `${importRoot}
+namespace Result {
+	export let total: number = 0;
+	export function add(value: number) { total += value; }
+}
+Result.add(value);
+if (Result.total !== ${moduleCount}) {
+	throw new Error('Unexpected namespace tree total: ' + Result.total);
+}
+console.log('total', Result.total);
+${metricsReporter}
+`;
+	return files;
+};
+
+/**
  * An ESM project that imports N generated CommonJS packages from node_modules,
  * exercising the ESM->CJS interop load-hook path (the surface #809 profiled).
  */

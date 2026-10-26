@@ -26,6 +26,8 @@ For `--json`, use `pnpm --silent` so pnpm's script banner stays out of stdout an
 | `esm-ts` | ✅ | tsx CLI | Transform + resolution hot path (`--specifier` applies) |
 | `native-ts` | ✅ | `node` | Node's native type stripping — reference floor (ignores `--compare`) |
 | `cjs-require` | | tsx CLI | The `tsx/cjs` require path |
+| `esm-fallback` | | tsx CLI | ESM namespace tree: Oxc eligibility checks, then esbuild |
+| `cjs-fallback` | | tsx CLI | CommonJS namespace tree: Oxc eligibility checks, then esbuild |
 | `cjs-interop` | | tsx CLI | ESM importing N CommonJS `node_modules` packages (the #809 surface) |
 
 Running with no scenario names runs the **default set**; name any scenario (e.g. `pnpm benchmark cjs-interop`) to run it explicitly. All tsx scenarios run through the **tsx CLI** (not `--import`) for consistency with real usage; the CLI's extra Node spawn is constant across rows and visible against `node-baseline`.
@@ -74,7 +76,32 @@ Scenarios below their `minNodeVersion` (e.g. `native-ts` under 22.18.0) are skip
 
 ## Reproducibility
 
-The tsx transform cache is reset before each tsx scenario's warmup to avoid stale-file skew. Pass `--cache-entries` to instead create an isolated cache, seed it with unrelated entries, and retain it across warmup and timed runs. This mode measures cache initialization and warm lookup scaling without clearing or changing the user's cache. Node baseline scenarios are unaffected. Runs are interleaved after warmup.
+The tsx transform cache is reset before each tsx scenario's warmup to avoid stale-file skew. Pass `--cache-entries` to instead create an isolated cache for each implementation, seed it with unrelated entries, and retain it across warmup and timed runs. This mode measures cache initialization and warm lookup scaling without clearing or changing the user's cache. Node baseline scenarios are unaffected. Runs are interleaved after warmup, with implementation order reversed on alternate rounds.
+
+## Oxc fallback measurements
+
+The opt-in `esm-fallback` and `cjs-fallback` scenarios put a mutable TypeScript
+namespace in every module, including the entry. Oxc parses each source and rejects
+it before transformation. The esbuild JS API then transforms the original source.
+Each graph checks its computed total before reporting metrics.
+
+```sh
+node ./dist/cli.mjs scripts/benchmark/index.ts \
+  esm-fallback cjs-fallback --compare /path/to/esbuild-only-checkout \
+  --modules 1000 --runs 15 --cold --json
+```
+
+Repeat with `NODE_OPTIONS=--no-addons` to measure WASM eligibility checks before
+esbuild. Apply this setting to both implementations. Omit `--cold` to measure
+cache hits. Use a short, disposable `TMPDIR` for cache isolation on macOS.
+Each workload has the requested module count plus one entry module.
+
+This measures startup when every source requires fallback. It includes compiler
+initialization, eligibility parsing, esbuild, resolution, execution, and CLI
+startup. It does not isolate one transform call or predict a mixed project's
+performance. Options rejected before Oxc loads can have a lower cost.
+See [the recorded comparison](../../notes/tsx/oxc-evaluation.md#fallback-overhead)
+for the baseline definition and results. Keep raw JSON outside version control.
 
 ## Oxc feasibility measurements
 

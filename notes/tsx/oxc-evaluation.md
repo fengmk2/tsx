@@ -62,6 +62,74 @@ Repeat without `--cold` for warm-cache measurements. Repeat both commands with
 the transform cache; long Unix socket paths exceed the CLI IPC path limit on
 macOS. No local tests or builds ran concurrently with these measurements.
 
+### Fallback overhead
+
+This comparison isolates the added Oxc fallback path at runtime revision
+`1d0abd0`. The control uses the same revision and installed dependencies, with
+only the three `attemptOxcTransform()` calls bypassed. Both versions retain the
+same loaders, cache keys, esbuild options, and esbuild `0.28.0` dependency.
+
+The `esm-fallback` and `cjs-fallback` scenarios contain 1,000 TypeScript modules
+plus an entry module. Every file uses a mutable namespace, which the Oxc AST
+check rejects. The esbuild JS API then transforms the original source. Each
+entry checks the computed graph total before reporting metrics.
+
+Measurements use Node `24.22.1`, macOS arm64, and an Apple M4 Max. Each value is
+the median of 15 fresh-process runs after one untimed warmup per implementation.
+Timed runs interleave the implementations and reverse their order on alternate
+rounds. The WASM comparison applies `NODE_OPTIONS=--no-addons` to both versions.
+Added time is the difference between the two medians. No builds or tests run
+concurrently with the measurements.
+
+| Cold-cache path | Workload | esbuild only | Oxc → esbuild | Added time |
+| --- | --- | ---: | ---: | ---: |
+| Native | ESM namespaces | 623.89 ms | 638.78 ms | +14.89 ms (+2.39%) |
+| Native | CommonJS namespaces | 615.89 ms | 631.94 ms | +16.05 ms (+2.61%) |
+| WASM | ESM namespaces | 620.73 ms | 680.78 ms | +60.05 ms (+9.67%) |
+| WASM | CommonJS namespaces | 622.31 ms | 675.56 ms | +53.25 ms (+8.56%) |
+
+| Warm-cache workload | Native: control → draft | WASM: control → draft |
+| --- | ---: | ---: |
+| ESM namespaces | 162.38 → 160.50 ms | 162.89 → 164.44 ms |
+| CommonJS namespaces | 160.11 → 158.64 ms | 156.59 → 156.80 ms |
+
+The cold results include Oxc initialization and eligibility parsing, followed by
+esbuild, module resolution, execution, and CLI startup. They measure a graph
+where every file requires fallback; they do not isolate a per-call cost or
+establish a universal worst-case bound. Options rejected before Oxc loads can
+cost less. Warm-cache median differences stay within 2 ms because cache hits
+bypass both compilers.
+
+First run `pnpm build` in the current checkout so its native and WASM artifacts
+are available. Then create the esbuild-only control:
+
+```sh
+fallback_control=$(mktemp -d /tmp/tsx-control.XXXXXX)
+git archive 1d0abd0 | tar -x -C "$fallback_control"
+ln -s "$PWD/node_modules" "$fallback_control/node_modules"
+python3 - "$fallback_control" <<'PY'
+import pathlib
+import sys
+
+source = pathlib.Path(sys.argv[1]) / 'src/utils/transform/index.ts'
+text = source.read_text()
+call = 'const nativeResult = attemptOxcTransform(_code, esbuildOptions);'
+assert text.count(call) == 3
+source.write_text(text.replace(call, 'const nativeResult = undefined;'))
+PY
+pnpm --dir "$fallback_control" build:js
+
+fallback_tmp=$(mktemp -d /tmp/tfb.XXXXXX)
+TMPDIR="$fallback_tmp" node ./dist/cli.mjs scripts/benchmark/index.ts \
+  esm-fallback cjs-fallback --compare "$fallback_control" \
+  --modules 1000 --runs 15 --cold --json
+```
+
+Repeat the last command with `NODE_OPTIONS=--no-addons` for WASM. Repeat both
+commands without `--cold` for warm caches. Clear unrelated Node and tsx option
+overrides before measuring. Keep raw samples outside version control, and remove
+the disposable control and cache directories when finished.
+
 ## Initial upstream assessment
 
 The current Oxc packages can accelerate some TypeScript workloads, but they cannot replace tsx's backend while preserving its full behavior. Do not switch the production backend on the strength of ESM benchmarks. This assessment covers npm `@oxc-node/core@1.0.1`, `oxc-transform@0.155.0`, and the tsx checkout at `4473971` with `esbuild@0.28.0`, reviewed on 2026-10-25. The [oxc-node source revision and APIs](../oxc-node/README.md) are recorded separately.

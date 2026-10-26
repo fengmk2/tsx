@@ -161,38 +161,54 @@ type Row = {
 	results: RunResult[];
 };
 
-const measureCell = async (
+const measureCells = async (
 	scenario: Scenario,
 	node: NodeBinary,
-	cliPath: string,
+	cells: TsxImplementation[],
 	fixturePath: string,
-): Promise<RunResult[]> => {
+): Promise<RunResult[][]> => {
 	const entryPath = path.join(fixturePath, scenario.entry);
-	const args = scenario.runner === 'tsx' ? [cliPath, entryPath] : [entryPath];
 	const runsTsx = scenario.runner === 'tsx';
-	await using cacheFixture = runsTsx && cacheEntries > 0
-		? await createFixture()
-		: undefined;
-	const cacheEnvironment = cacheFixture
-		? {
-			TMPDIR: cacheFixture.path,
-			TEMP: cacheFixture.path,
-			TMP: cacheFixture.path,
-		}
-		: undefined;
+	const cacheFixtures = runsTsx && cacheEntries > 0
+		? await Promise.all(cells.map(() => createFixture()))
+		: [];
+	await using _cacheFixtures = disposeAll(cacheFixtures);
+	const sessions = cells.map(({ cliPath }, index) => ({
+		args: runsTsx ? [cliPath, entryPath] : [entryPath],
+		cacheFixture: cacheFixtures[index],
+		environment: cacheFixtures[index]
+			? {
+				TMPDIR: cacheFixtures[index].path,
+				TEMP: cacheFixtures[index].path,
+				TMP: cacheFixtures[index].path,
+			}
+			: undefined,
+		results: [] as RunResult[],
+	}));
 
-	// Isolated mode retains its directory through warmup and timed runs.
-	await prepareTransformCache(runsTsx, cacheFixture?.path);
-	await runOnce(node.path, args, fixturePath, cacheEnvironment);
-
-	const results: RunResult[] = [];
-	for (let run = 0; run < runs; run += 1) {
-		if (runsTsx && cold) {
-			await clearTransformCache();
-		}
-		results.push(await runOnce(node.path, args, fixturePath, cacheEnvironment));
+	// Prepare all caches before warmup so a later cell cannot erase a warm cache.
+	for (const session of sessions) {
+		await prepareTransformCache(runsTsx, session.cacheFixture?.path);
 	}
-	return results;
+	for (const session of sessions) {
+		await runOnce(node.path, session.args, fixturePath, session.environment);
+	}
+
+	for (let run = 0; run < runs; run += 1) {
+		const ordered = run % 2 ? [...sessions].reverse() : sessions;
+		for (const session of ordered) {
+			if (runsTsx && cold) {
+				await clearTransformCache();
+			}
+			session.results.push(await runOnce(
+				node.path,
+				session.args,
+				fixturePath,
+				session.environment,
+			));
+		}
+	}
+	return sessions.map(session => session.results);
 };
 
 // Resolve Node binaries (current + any --node), de-duplicated by version
@@ -252,16 +268,18 @@ for (const scenario of selectedScenarios) {
 				}]
 				: implementations
 		);
-		for (const { name, cliPath } of cells) {
-			for (const [index, moduleCount] of moduleCounts.entries()) {
+		for (const [index, moduleCount] of moduleCounts.entries()) {
+			for (const { name } of cells) {
 				log(`  ${scenario.name} · Node ${node.version} · ${name} · ${moduleCount} modules`);
-				const results = await measureCell(scenario, node, cliPath, fixtures[index].path);
+			}
+			const results = await measureCells(scenario, node, cells, fixtures[index].path);
+			for (const [cellIndex, { name }] of cells.entries()) {
 				rows.push({
 					scenario: scenario.name,
 					nodeVersion: node.version,
 					impl: name,
 					moduleCount,
-					results,
+					results: results[cellIndex],
 				});
 			}
 		}
