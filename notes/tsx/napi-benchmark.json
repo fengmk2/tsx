@@ -1,0 +1,1259 @@
+{
+  "measuredAt": "2026-10-26T02:24:28.085Z",
+  "revision": "f3bf622",
+  "baseline": "8e4b900",
+  "platform": "darwin",
+  "arch": "arm64",
+  "cpu": "Apple M4 Max",
+  "node": "v24.22.1",
+  "measurements": [
+    {
+      "backend": "native",
+      "meta": {
+        "runs": 7,
+        "cold": true,
+        "cacheEntries": 0,
+        "scale": false,
+        "specifier": "ts"
+      },
+      "rows": [
+        {
+          "scenario": "esm-ts",
+          "nodeVersion": "24.22.1",
+          "impl": "local",
+          "moduleCount": 1000,
+          "results": [
+            {
+              "wallMs": 264.180875,
+              "maxRssKb": 100832,
+              "loadMs": 195.818917,
+              "evalMs": 0.5961660000000109
+            },
+            {
+              "wallMs": 265.0764590000001,
+              "maxRssKb": 100848,
+              "loadMs": 203.950375,
+              "evalMs": 0.5655830000000037
+            },
+            {
+              "wallMs": 275.583625,
+              "maxRssKb": 100816,
+              "loadMs": 212.539875,
+              "evalMs": 0.7246670000000108
+            },
+            {
+              "wallMs": 262.3615,
+              "maxRssKb": 101552,
+              "loadMs": 199.045625,
+              "evalMs": 0.6033749999999998
+            },
+            {
+              "wallMs": 245.42025000000012,
+              "maxRssKb": 100816,
+              "loadMs": 187.21175,
+              "evalMs": 0.7237499999999955
+            },
+            {
+              "wallMs": 247.9898750000002,
+              "maxRssKb": 100784,
+              "loadMs": 186.3695,
+              "evalMs": 0.5963750000000232
+            },
+            {
+              "wallMs": 252.4168749999999,
+              "maxRssKb": 100592,
+              "loadMs": 190.67475,
+              "evalMs": 0.735666000000009
+            }
+          ]
+        },
+        {
+          "scenario": "esm-ts",
+          "nodeVersion": "24.22.1",
+          "impl": "/Users/fengmk2/git/github.com/privatenumber/tsx/node_modules/.cache/tsx-baseline-8e4b900",
+          "moduleCount": 1000,
+          "results": [
+            {
+              "wallMs": 557.2883749999996,
+              "maxRssKb": 124992,
+              "loadMs": 498.45375,
+              "evalMs": 0.5531659999999761
+            },
+            {
+              "wallMs": 563.5803750000005,
+              "maxRssKb": 124960,
+              "loadMs": 502.529292,
+              "evalMs": 0.6363749999999868
+            },
+            {
+              "wallMs": 554.3021659999995,
+              "maxRssKb": 125328,
+              "loadMs": 492.997541,
+              "evalMs": 0.6217919999999708
+            },
+            {
+              "wallMs": 573.460959,
+              "maxRssKb": 125120,
+              "loadMs": 510.793917,
+              "evalMs": 0.5549579999999992
+            },
+            {
+              "wallMs": 536.5474169999998,
+              "maxRssKb": 124592,
+              "loadMs": 476.414375,
+              "evalMs": 0.6110419999999976
+            },
+            {
+              "wallMs": 550.0201660000002,
+              "maxRssKb": 124992,
+              "loadMs": 488.89225,
+              "evalMs": 0.5470420000000331
+            },
+            {
+              "wallMs": 533.9734170000002,
+              "maxRssKb": 125200,
+              "loadMs": 475.412708,
+              "evalMs": 0.5525000000000091
+            }
+          ]
+        },
+        {
+          "scenario": "cjs-require",
+          "nodeVersion": "24.22.1",
+          "impl": "local",
+          "moduleCount": 1000,
+          "results": [
+            {
+              "wallMs": 250.40308299999924,
+              "maxRssKb": 102528,
+              "loadMs": 33.970709,
+              "evalMs": 159.230583
+            },
+            {
+              "wallMs": 249.69024999999965,
+              "maxRssKb": 102080,
+              "loadMs": 33.443292,
+              "evalMs": 159.626625
+            },
+            {
+              "wallMs": 254.7754590000004,
+              "maxRssKb": 102208,
+              "loadMs": 34.323875,
+              "evalMs": 160.089625
+            },
+            {
+              "wallMs": 266.1386249999996,
+              "maxRssKb": 101088,
+              "loadMs": 34.501083,
+              "evalMs": 161.89350000000002
+            },
+            {
+              "wallMs": 251.4110839999994,
+              "maxRssKb": 102752,
+              "loadMs": 33.468542,
+              "evalMs": 156.53920799999997
+            },
+            {
+              "wallMs": 262.94229200000154,
+              "maxRssKb": 102368,
+              "loadMs": 37.9645,
+              "evalMs": 161.530125
+            },
+            {
+              "wallMs": 252.07487500000025,
+              "maxRssKb": 101392,
+              "loadMs": 32.778667,
+              "evalMs": 157.74233299999997
+            }
+          ]
+        },
+        {
+          "scenario": "cjs-require",
+          "nodeVersion": "24.22.1",
+          "impl": "/Users/fengmk2/git/github.com/privatenumber/tsx/node_modules/.cache/tsx-baseline-8e4b900",
+          "moduleCount": 1000,
+          "results": [
+            {
+              "wallMs": 557.5257499999989,
+              "maxRssKb": 122736,
+              "loadMs": 61.412375,
+              "evalMs": 432.821917
+            },
+            {
+              "wallMs": 536.5389999999989,
+              "maxRssKb": 124880,
+              "loadMs": 54.869708,
+              "evalMs": 419.993875
+            },
+            {
+              "wallMs": 557.9648339999985,
+              "maxRssKb": 124912,
+              "loadMs": 56.409167,
+              "evalMs": 439.51187500000003
+            },
+            {
+              "wallMs": 548.3154169999998,
+              "maxRssKb": 120192,
+              "loadMs": 56.704167,
+              "evalMs": 430.45887500000003
+            },
+            {
+              "wallMs": 568.7795420000002,
+              "maxRssKb": 125728,
+              "loadMs": 55.261333,
+              "evalMs": 454.435333
+            },
+            {
+              "wallMs": 555.4311249999992,
+              "maxRssKb": 122352,
+              "loadMs": 54.951584,
+              "evalMs": 440.895541
+            },
+            {
+              "wallMs": 544.6276670000007,
+              "maxRssKb": 121200,
+              "loadMs": 55.410583,
+              "evalMs": 430.61591699999997
+            }
+          ]
+        },
+        {
+          "scenario": "hooks-passthrough",
+          "nodeVersion": "24.22.1",
+          "impl": "local",
+          "moduleCount": 1000,
+          "results": [
+            {
+              "wallMs": 127.39195799999834,
+              "maxRssKb": 81376,
+              "loadMs": 81.307125,
+              "evalMs": 0.607292000000001
+            },
+            {
+              "wallMs": 129.94179199999962,
+              "maxRssKb": 81360,
+              "loadMs": 80.789416,
+              "evalMs": 0.5739999999999981
+            },
+            {
+              "wallMs": 126.49437500000022,
+              "maxRssKb": 81344,
+              "loadMs": 79.851542,
+              "evalMs": 0.5649580000000043
+            },
+            {
+              "wallMs": 128.74374999999964,
+              "maxRssKb": 81232,
+              "loadMs": 81.329083,
+              "evalMs": 0.5478750000000048
+            },
+            {
+              "wallMs": 129.82091599999876,
+              "maxRssKb": 81168,
+              "loadMs": 81.346834,
+              "evalMs": 0.5838329999999985
+            },
+            {
+              "wallMs": 126.93883299999834,
+              "maxRssKb": 81408,
+              "loadMs": 79.710375,
+              "evalMs": 0.6250420000000076
+            },
+            {
+              "wallMs": 128.81237499999952,
+              "maxRssKb": 81296,
+              "loadMs": 80.96575,
+              "evalMs": 0.5720840000000038
+            }
+          ]
+        },
+        {
+          "scenario": "hooks-passthrough",
+          "nodeVersion": "24.22.1",
+          "impl": "/Users/fengmk2/git/github.com/privatenumber/tsx/node_modules/.cache/tsx-baseline-8e4b900",
+          "moduleCount": 1000,
+          "results": [
+            {
+              "wallMs": 134.27545800000007,
+              "maxRssKb": 81200,
+              "loadMs": 84.372083,
+              "evalMs": 0.5899169999999998
+            },
+            {
+              "wallMs": 133.95550000000003,
+              "maxRssKb": 81456,
+              "loadMs": 85.474625,
+              "evalMs": 0.5958749999999924
+            },
+            {
+              "wallMs": 128.73695800000132,
+              "maxRssKb": 81232,
+              "loadMs": 79.996292,
+              "evalMs": 0.5646660000000026
+            },
+            {
+              "wallMs": 131.34312499999942,
+              "maxRssKb": 81472,
+              "loadMs": 83.056333,
+              "evalMs": 0.6085840000000076
+            },
+            {
+              "wallMs": 126.12895899999967,
+              "maxRssKb": 81344,
+              "loadMs": 79.576291,
+              "evalMs": 0.5480000000000018
+            },
+            {
+              "wallMs": 128.24995899999885,
+              "maxRssKb": 81120,
+              "loadMs": 80.860458,
+              "evalMs": 0.5722080000000034
+            },
+            {
+              "wallMs": 128.60416700000133,
+              "maxRssKb": 81312,
+              "loadMs": 81.560667,
+              "evalMs": 0.5904579999999982
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "backend": "native",
+      "meta": {
+        "runs": 7,
+        "cold": false,
+        "cacheEntries": 0,
+        "scale": false,
+        "specifier": "ts"
+      },
+      "rows": [
+        {
+          "scenario": "esm-ts",
+          "nodeVersion": "24.22.1",
+          "impl": "local",
+          "moduleCount": 1000,
+          "results": [
+            {
+              "wallMs": 150.36462499999993,
+              "maxRssKb": 88800,
+              "loadMs": 103.2435,
+              "evalMs": 0.6027500000000003
+            },
+            {
+              "wallMs": 148.65466600000002,
+              "maxRssKb": 88848,
+              "loadMs": 99.903125,
+              "evalMs": 0.6256659999999954
+            },
+            {
+              "wallMs": 147.28316599999994,
+              "maxRssKb": 88752,
+              "loadMs": 99.896958,
+              "evalMs": 0.569041999999996
+            },
+            {
+              "wallMs": 152.3638329999999,
+              "maxRssKb": 88832,
+              "loadMs": 104.737958,
+              "evalMs": 0.5862499999999926
+            },
+            {
+              "wallMs": 145.78145799999993,
+              "maxRssKb": 88912,
+              "loadMs": 98.341334,
+              "evalMs": 0.6089999999999947
+            },
+            {
+              "wallMs": 144.73516700000005,
+              "maxRssKb": 88688,
+              "loadMs": 98.664292,
+              "evalMs": 0.5955829999999906
+            },
+            {
+              "wallMs": 146.04158299999995,
+              "maxRssKb": 88816,
+              "loadMs": 99.19275,
+              "evalMs": 0.5766670000000005
+            }
+          ]
+        },
+        {
+          "scenario": "esm-ts",
+          "nodeVersion": "24.22.1",
+          "impl": "/Users/fengmk2/git/github.com/privatenumber/tsx/node_modules/.cache/tsx-baseline-8e4b900",
+          "moduleCount": 1000,
+          "results": [
+            {
+              "wallMs": 149.4529160000002,
+              "maxRssKb": 87776,
+              "loadMs": 101.951459,
+              "evalMs": 0.6547079999999994
+            },
+            {
+              "wallMs": 152.94012500000008,
+              "maxRssKb": 88832,
+              "loadMs": 102.237125,
+              "evalMs": 0.5859579999999909
+            },
+            {
+              "wallMs": 144.4115829999996,
+              "maxRssKb": 87312,
+              "loadMs": 97.924167,
+              "evalMs": 0.5839169999999996
+            },
+            {
+              "wallMs": 146.22062499999993,
+              "maxRssKb": 88832,
+              "loadMs": 99.402125,
+              "evalMs": 0.5692920000000044
+            },
+            {
+              "wallMs": 146.95966700000008,
+              "maxRssKb": 88784,
+              "loadMs": 100.416667,
+              "evalMs": 0.5772499999999923
+            },
+            {
+              "wallMs": 147.94612499999994,
+              "maxRssKb": 88816,
+              "loadMs": 100.596375,
+              "evalMs": 0.6012500000000074
+            },
+            {
+              "wallMs": 146.0122080000001,
+              "maxRssKb": 88384,
+              "loadMs": 100.209958,
+              "evalMs": 0.5595419999999933
+            }
+          ]
+        },
+        {
+          "scenario": "cjs-require",
+          "nodeVersion": "24.22.1",
+          "impl": "local",
+          "moduleCount": 1000,
+          "results": [
+            {
+              "wallMs": 145.4837080000002,
+              "maxRssKb": 83344,
+              "loadMs": 30.361292,
+              "evalMs": 67.24433300000001
+            },
+            {
+              "wallMs": 142.22154100000034,
+              "maxRssKb": 83888,
+              "loadMs": 28.885917,
+              "evalMs": 65.907625
+            },
+            {
+              "wallMs": 140.1566670000002,
+              "maxRssKb": 85584,
+              "loadMs": 28.514583,
+              "evalMs": 65.735167
+            },
+            {
+              "wallMs": 144.84841700000015,
+              "maxRssKb": 85504,
+              "loadMs": 28.820375,
+              "evalMs": 70.021334
+            },
+            {
+              "wallMs": 150.18291699999963,
+              "maxRssKb": 85232,
+              "loadMs": 28.7125,
+              "evalMs": 74.54012499999999
+            },
+            {
+              "wallMs": 140.5216250000003,
+              "maxRssKb": 85232,
+              "loadMs": 28.635125,
+              "evalMs": 65.925208
+            },
+            {
+              "wallMs": 141.44554199999948,
+              "maxRssKb": 83648,
+              "loadMs": 29.34725,
+              "evalMs": 65.495875
+            }
+          ]
+        },
+        {
+          "scenario": "cjs-require",
+          "nodeVersion": "24.22.1",
+          "impl": "/Users/fengmk2/git/github.com/privatenumber/tsx/node_modules/.cache/tsx-baseline-8e4b900",
+          "moduleCount": 1000,
+          "results": [
+            {
+              "wallMs": 141.4419170000001,
+              "maxRssKb": 83696,
+              "loadMs": 28.642041,
+              "evalMs": 65.71058400000001
+            },
+            {
+              "wallMs": 141.9250830000001,
+              "maxRssKb": 85264,
+              "loadMs": 29.571125,
+              "evalMs": 65.073333
+            },
+            {
+              "wallMs": 142.30195900000035,
+              "maxRssKb": 85296,
+              "loadMs": 29.000292,
+              "evalMs": 65.764875
+            },
+            {
+              "wallMs": 144.11304199999995,
+              "maxRssKb": 85344,
+              "loadMs": 29.258125,
+              "evalMs": 66.16175000000001
+            },
+            {
+              "wallMs": 143.848833,
+              "maxRssKb": 85824,
+              "loadMs": 29.080292,
+              "evalMs": 67.1285
+            },
+            {
+              "wallMs": 140.8179999999993,
+              "maxRssKb": 83760,
+              "loadMs": 29.600542,
+              "evalMs": 65.10575
+            },
+            {
+              "wallMs": 152.25033299999996,
+              "maxRssKb": 83664,
+              "loadMs": 31.559459,
+              "evalMs": 72.35137499999999
+            }
+          ]
+        },
+        {
+          "scenario": "hooks-passthrough",
+          "nodeVersion": "24.22.1",
+          "impl": "local",
+          "moduleCount": 1000,
+          "results": [
+            {
+              "wallMs": 124.27050000000054,
+              "maxRssKb": 81264,
+              "loadMs": 75.0765,
+              "evalMs": 0.5618330000000071
+            },
+            {
+              "wallMs": 128.1376250000003,
+              "maxRssKb": 81376,
+              "loadMs": 78.187375,
+              "evalMs": 0.6353340000000003
+            },
+            {
+              "wallMs": 129.8954160000003,
+              "maxRssKb": 81328,
+              "loadMs": 79.681291,
+              "evalMs": 0.6466669999999937
+            },
+            {
+              "wallMs": 131.0064999999995,
+              "maxRssKb": 81344,
+              "loadMs": 81.540458,
+              "evalMs": 0.5999580000000009
+            },
+            {
+              "wallMs": 122.54170799999974,
+              "maxRssKb": 81312,
+              "loadMs": 75.50425,
+              "evalMs": 0.5818330000000032
+            },
+            {
+              "wallMs": 142.70712500000081,
+              "maxRssKb": 81552,
+              "loadMs": 89.76,
+              "evalMs": 0.6328749999999985
+            },
+            {
+              "wallMs": 133.01375000000007,
+              "maxRssKb": 81360,
+              "loadMs": 82.151458,
+              "evalMs": 0.6196669999999926
+            }
+          ]
+        },
+        {
+          "scenario": "hooks-passthrough",
+          "nodeVersion": "24.22.1",
+          "impl": "/Users/fengmk2/git/github.com/privatenumber/tsx/node_modules/.cache/tsx-baseline-8e4b900",
+          "moduleCount": 1000,
+          "results": [
+            {
+              "wallMs": 130.53429200000028,
+              "maxRssKb": 81600,
+              "loadMs": 81.240834,
+              "evalMs": 0.6950829999999968
+            },
+            {
+              "wallMs": 124.17212500000005,
+              "maxRssKb": 81232,
+              "loadMs": 75.414375,
+              "evalMs": 0.5603339999999974
+            },
+            {
+              "wallMs": 123.87770799999998,
+              "maxRssKb": 81184,
+              "loadMs": 75.114875,
+              "evalMs": 0.6102089999999976
+            },
+            {
+              "wallMs": 127.14620800000012,
+              "maxRssKb": 81424,
+              "loadMs": 76.867584,
+              "evalMs": 0.5655000000000001
+            },
+            {
+              "wallMs": 122.74675000000025,
+              "maxRssKb": 81120,
+              "loadMs": 74.95525,
+              "evalMs": 0.6028329999999897
+            },
+            {
+              "wallMs": 121.95587499999965,
+              "maxRssKb": 81184,
+              "loadMs": 74.785625,
+              "evalMs": 0.6259579999999971
+            },
+            {
+              "wallMs": 125.14191699999992,
+              "maxRssKb": 81184,
+              "loadMs": 75.660709,
+              "evalMs": 0.6125830000000008
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "backend": "wasm",
+      "meta": {
+        "runs": 7,
+        "cold": true,
+        "cacheEntries": 0,
+        "scale": false,
+        "specifier": "ts"
+      },
+      "rows": [
+        {
+          "scenario": "esm-ts",
+          "nodeVersion": "24.22.1",
+          "impl": "local",
+          "moduleCount": 1000,
+          "results": [
+            {
+              "wallMs": 285.89641700000004,
+              "maxRssKb": 114688,
+              "loadMs": 225.345083,
+              "evalMs": 0.6076670000000206
+            },
+            {
+              "wallMs": 304.5871249999999,
+              "maxRssKb": 115312,
+              "loadMs": 243.158541,
+              "evalMs": 0.6193749999999909
+            },
+            {
+              "wallMs": 303.7679579999999,
+              "maxRssKb": 114592,
+              "loadMs": 242.98625,
+              "evalMs": 0.6294999999999789
+            },
+            {
+              "wallMs": 289.347583,
+              "maxRssKb": 114208,
+              "loadMs": 230.030042,
+              "evalMs": 0.6156249999999943
+            },
+            {
+              "wallMs": 299.79604100000006,
+              "maxRssKb": 115952,
+              "loadMs": 239.224208,
+              "evalMs": 0.609250000000003
+            },
+            {
+              "wallMs": 289.345417,
+              "maxRssKb": 114912,
+              "loadMs": 231.304833,
+              "evalMs": 0.6617080000000044
+            },
+            {
+              "wallMs": 287.1050829999999,
+              "maxRssKb": 116000,
+              "loadMs": 225.802083,
+              "evalMs": 1.2515420000000006
+            }
+          ]
+        },
+        {
+          "scenario": "esm-ts",
+          "nodeVersion": "24.22.1",
+          "impl": "/Users/fengmk2/git/github.com/privatenumber/tsx/node_modules/.cache/tsx-baseline-8e4b900",
+          "moduleCount": 1000,
+          "results": [
+            {
+              "wallMs": 548.8382500000002,
+              "maxRssKb": 124544,
+              "loadMs": 486.458833,
+              "evalMs": 0.5823749999999563
+            },
+            {
+              "wallMs": 556.014208,
+              "maxRssKb": 125040,
+              "loadMs": 495.246416,
+              "evalMs": 0.6213339999999903
+            },
+            {
+              "wallMs": 568.8247920000003,
+              "maxRssKb": 124768,
+              "loadMs": 507.725042,
+              "evalMs": 0.5923750000000041
+            },
+            {
+              "wallMs": 542.5720000000001,
+              "maxRssKb": 125104,
+              "loadMs": 481.406292,
+              "evalMs": 0.6019999999999754
+            },
+            {
+              "wallMs": 566.7763749999995,
+              "maxRssKb": 125136,
+              "loadMs": 503.919208,
+              "evalMs": 0.6412919999999644
+            },
+            {
+              "wallMs": 562.9710830000004,
+              "maxRssKb": 124944,
+              "loadMs": 500.266833,
+              "evalMs": 0.5753750000000082
+            },
+            {
+              "wallMs": 580.2384579999998,
+              "maxRssKb": 125456,
+              "loadMs": 518.387667,
+              "evalMs": 0.6350410000000011
+            }
+          ]
+        },
+        {
+          "scenario": "cjs-require",
+          "nodeVersion": "24.22.1",
+          "impl": "local",
+          "moduleCount": 1000,
+          "results": [
+            {
+              "wallMs": 318.1188750000001,
+              "maxRssKb": 114992,
+              "loadMs": 57.89,
+              "evalMs": 197.0525
+            },
+            {
+              "wallMs": 312.36312499999985,
+              "maxRssKb": 112928,
+              "loadMs": 59.272125,
+              "evalMs": 190.30712499999998
+            },
+            {
+              "wallMs": 311.35383300000103,
+              "maxRssKb": 114912,
+              "loadMs": 57.682083,
+              "evalMs": 193.027917
+            },
+            {
+              "wallMs": 297.1688749999994,
+              "maxRssKb": 114048,
+              "loadMs": 55.567958,
+              "evalMs": 180.840917
+            },
+            {
+              "wallMs": 301.98520800000006,
+              "maxRssKb": 114272,
+              "loadMs": 55.636209,
+              "evalMs": 185.56912499999999
+            },
+            {
+              "wallMs": 301.2927090000012,
+              "maxRssKb": 112784,
+              "loadMs": 57.759875,
+              "evalMs": 180.949125
+            },
+            {
+              "wallMs": 306.19824999999946,
+              "maxRssKb": 114480,
+              "loadMs": 55.659875,
+              "evalMs": 190.532833
+            }
+          ]
+        },
+        {
+          "scenario": "cjs-require",
+          "nodeVersion": "24.22.1",
+          "impl": "/Users/fengmk2/git/github.com/privatenumber/tsx/node_modules/.cache/tsx-baseline-8e4b900",
+          "moduleCount": 1000,
+          "results": [
+            {
+              "wallMs": 568.8301660000016,
+              "maxRssKb": 125392,
+              "loadMs": 61.274791,
+              "evalMs": 443.858459
+            },
+            {
+              "wallMs": 588.1844590000001,
+              "maxRssKb": 125808,
+              "loadMs": 59.692792,
+              "evalMs": 465.00849999999997
+            },
+            {
+              "wallMs": 568.0989169999993,
+              "maxRssKb": 120448,
+              "loadMs": 58.913958,
+              "evalMs": 446.417167
+            },
+            {
+              "wallMs": 573.1092499999995,
+              "maxRssKb": 125648,
+              "loadMs": 57.325583,
+              "evalMs": 454.910542
+            },
+            {
+              "wallMs": 585.5311250000013,
+              "maxRssKb": 125136,
+              "loadMs": 57.980459,
+              "evalMs": 468.55508299999997
+            },
+            {
+              "wallMs": 597.6981670000005,
+              "maxRssKb": 120768,
+              "loadMs": 58.493833,
+              "evalMs": 477.58020899999997
+            },
+            {
+              "wallMs": 590.4577910000007,
+              "maxRssKb": 125072,
+              "loadMs": 57.586417,
+              "evalMs": 469.62416700000006
+            }
+          ]
+        },
+        {
+          "scenario": "hooks-passthrough",
+          "nodeVersion": "24.22.1",
+          "impl": "local",
+          "moduleCount": 1000,
+          "results": [
+            {
+              "wallMs": 129.47541600000113,
+              "maxRssKb": 81312,
+              "loadMs": 81.523667,
+              "evalMs": 0.6340419999999938
+            },
+            {
+              "wallMs": 128.50450000000092,
+              "maxRssKb": 81280,
+              "loadMs": 81.451792,
+              "evalMs": 0.5741660000000053
+            },
+            {
+              "wallMs": 131.222541000001,
+              "maxRssKb": 81264,
+              "loadMs": 83.047833,
+              "evalMs": 0.6268749999999983
+            },
+            {
+              "wallMs": 130.7077500000014,
+              "maxRssKb": 81232,
+              "loadMs": 82.498417,
+              "evalMs": 0.6025410000000022
+            },
+            {
+              "wallMs": 132.76479199999994,
+              "maxRssKb": 81280,
+              "loadMs": 84.102792,
+              "evalMs": 0.6125410000000073
+            },
+            {
+              "wallMs": 132.64833400000134,
+              "maxRssKb": 81264,
+              "loadMs": 82.6145,
+              "evalMs": 0.7686250000000001
+            },
+            {
+              "wallMs": 131.20720900000015,
+              "maxRssKb": 81216,
+              "loadMs": 83.07375,
+              "evalMs": 0.6069999999999993
+            }
+          ]
+        },
+        {
+          "scenario": "hooks-passthrough",
+          "nodeVersion": "24.22.1",
+          "impl": "/Users/fengmk2/git/github.com/privatenumber/tsx/node_modules/.cache/tsx-baseline-8e4b900",
+          "moduleCount": 1000,
+          "results": [
+            {
+              "wallMs": 130.41400000000067,
+              "maxRssKb": 81232,
+              "loadMs": 82.918667,
+              "evalMs": 0.6228750000000076
+            },
+            {
+              "wallMs": 131.50208300000304,
+              "maxRssKb": 81216,
+              "loadMs": 81.460459,
+              "evalMs": 0.6095830000000007
+            },
+            {
+              "wallMs": 128.89920800000255,
+              "maxRssKb": 81232,
+              "loadMs": 81.642917,
+              "evalMs": 0.6137910000000062
+            },
+            {
+              "wallMs": 129.54429100000198,
+              "maxRssKb": 81088,
+              "loadMs": 80.848084,
+              "evalMs": 0.5798329999999936
+            },
+            {
+              "wallMs": 133.26625000000058,
+              "maxRssKb": 81280,
+              "loadMs": 81.750958,
+              "evalMs": 0.6131249999999966
+            },
+            {
+              "wallMs": 129.84083300000202,
+              "maxRssKb": 81232,
+              "loadMs": 81.914,
+              "evalMs": 0.6035409999999928
+            },
+            {
+              "wallMs": 130.33124999999927,
+              "maxRssKb": 81216,
+              "loadMs": 82.302208,
+              "evalMs": 0.6032500000000027
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "backend": "wasm",
+      "meta": {
+        "runs": 7,
+        "cold": false,
+        "cacheEntries": 0,
+        "scale": false,
+        "specifier": "ts"
+      },
+      "rows": [
+        {
+          "scenario": "esm-ts",
+          "nodeVersion": "24.22.1",
+          "impl": "local",
+          "moduleCount": 1000,
+          "results": [
+            {
+              "wallMs": 151.80029200000007,
+              "maxRssKb": 88752,
+              "loadMs": 103.61,
+              "evalMs": 0.6202080000000052
+            },
+            {
+              "wallMs": 152.335334,
+              "maxRssKb": 88704,
+              "loadMs": 102.822792,
+              "evalMs": 0.6319999999999908
+            },
+            {
+              "wallMs": 151.97366699999998,
+              "maxRssKb": 86640,
+              "loadMs": 102.836583,
+              "evalMs": 0.6076669999999922
+            },
+            {
+              "wallMs": 150.6365830000001,
+              "maxRssKb": 86400,
+              "loadMs": 103.408375,
+              "evalMs": 0.5849580000000003
+            },
+            {
+              "wallMs": 151.24824999999987,
+              "maxRssKb": 86096,
+              "loadMs": 103.193041,
+              "evalMs": 0.5889170000000092
+            },
+            {
+              "wallMs": 160.0947920000001,
+              "maxRssKb": 85488,
+              "loadMs": 112.634417,
+              "evalMs": 0.5811250000000001
+            },
+            {
+              "wallMs": 159.8100840000002,
+              "maxRssKb": 85792,
+              "loadMs": 112.056542,
+              "evalMs": 0.6330410000000057
+            }
+          ]
+        },
+        {
+          "scenario": "esm-ts",
+          "nodeVersion": "24.22.1",
+          "impl": "/Users/fengmk2/git/github.com/privatenumber/tsx/node_modules/.cache/tsx-baseline-8e4b900",
+          "moduleCount": 1000,
+          "results": [
+            {
+              "wallMs": 158.1773330000001,
+              "maxRssKb": 88768,
+              "loadMs": 106.755792,
+              "evalMs": 0.6326669999999979
+            },
+            {
+              "wallMs": 155.19383300000027,
+              "maxRssKb": 88576,
+              "loadMs": 105.135791,
+              "evalMs": 0.6597919999999959
+            },
+            {
+              "wallMs": 153.9457080000002,
+              "maxRssKb": 88768,
+              "loadMs": 104.935166,
+              "evalMs": 0.5814590000000095
+            },
+            {
+              "wallMs": 155.65429200000017,
+              "maxRssKb": 88704,
+              "loadMs": 105.219875,
+              "evalMs": 0.5941249999999911
+            },
+            {
+              "wallMs": 154.684667,
+              "maxRssKb": 88736,
+              "loadMs": 105.428333,
+              "evalMs": 0.6126670000000018
+            },
+            {
+              "wallMs": 158.27566699999988,
+              "maxRssKb": 88816,
+              "loadMs": 106.650209,
+              "evalMs": 0.5821249999999907
+            },
+            {
+              "wallMs": 155.1432920000002,
+              "maxRssKb": 88688,
+              "loadMs": 105.089625,
+              "evalMs": 0.5729160000000064
+            }
+          ]
+        },
+        {
+          "scenario": "cjs-require",
+          "nodeVersion": "24.22.1",
+          "impl": "local",
+          "moduleCount": 1000,
+          "results": [
+            {
+              "wallMs": 148.60933299999988,
+              "maxRssKb": 85328,
+              "loadMs": 30.980458,
+              "evalMs": 68.671709
+            },
+            {
+              "wallMs": 147.82170799999994,
+              "maxRssKb": 83984,
+              "loadMs": 30.473583,
+              "evalMs": 68.29225
+            },
+            {
+              "wallMs": 148.88295800000014,
+              "maxRssKb": 83328,
+              "loadMs": 31.161958,
+              "evalMs": 69.078
+            },
+            {
+              "wallMs": 149.53662499999973,
+              "maxRssKb": 85568,
+              "loadMs": 30.411375,
+              "evalMs": 68.139208
+            },
+            {
+              "wallMs": 148.79812500000025,
+              "maxRssKb": 85424,
+              "loadMs": 30.739916,
+              "evalMs": 68.604084
+            },
+            {
+              "wallMs": 148.60041600000022,
+              "maxRssKb": 85792,
+              "loadMs": 30.81975,
+              "evalMs": 67.73825000000001
+            },
+            {
+              "wallMs": 146.4522909999996,
+              "maxRssKb": 85440,
+              "loadMs": 30.84075,
+              "evalMs": 67.617541
+            }
+          ]
+        },
+        {
+          "scenario": "cjs-require",
+          "nodeVersion": "24.22.1",
+          "impl": "/Users/fengmk2/git/github.com/privatenumber/tsx/node_modules/.cache/tsx-baseline-8e4b900",
+          "moduleCount": 1000,
+          "results": [
+            {
+              "wallMs": 148.08133400000042,
+              "maxRssKb": 85264,
+              "loadMs": 31.466792,
+              "evalMs": 68.301417
+            },
+            {
+              "wallMs": 148.32887499999924,
+              "maxRssKb": 83712,
+              "loadMs": 32.613292,
+              "evalMs": 68.571958
+            },
+            {
+              "wallMs": 149.87795900000037,
+              "maxRssKb": 83296,
+              "loadMs": 33.063709,
+              "evalMs": 68.93808299999999
+            },
+            {
+              "wallMs": 145.14029200000004,
+              "maxRssKb": 85264,
+              "loadMs": 29.366208,
+              "evalMs": 67.493209
+            },
+            {
+              "wallMs": 145.8077919999996,
+              "maxRssKb": 85184,
+              "loadMs": 30.015833,
+              "evalMs": 67.450209
+            },
+            {
+              "wallMs": 146.6369169999998,
+              "maxRssKb": 85328,
+              "loadMs": 30.878875,
+              "evalMs": 67.60654199999999
+            },
+            {
+              "wallMs": 145.45958299999984,
+              "maxRssKb": 85200,
+              "loadMs": 30.041416,
+              "evalMs": 67.145375
+            }
+          ]
+        },
+        {
+          "scenario": "hooks-passthrough",
+          "nodeVersion": "24.22.1",
+          "impl": "local",
+          "moduleCount": 1000,
+          "results": [
+            {
+              "wallMs": 127.13791599999968,
+              "maxRssKb": 81168,
+              "loadMs": 78.330416,
+              "evalMs": 0.6265420000000006
+            },
+            {
+              "wallMs": 130.44233299999996,
+              "maxRssKb": 81296,
+              "loadMs": 77.54,
+              "evalMs": 0.6610839999999882
+            },
+            {
+              "wallMs": 128.6942079999999,
+              "maxRssKb": 81264,
+              "loadMs": 78.273042,
+              "evalMs": 0.608041
+            },
+            {
+              "wallMs": 130.19708400000036,
+              "maxRssKb": 81440,
+              "loadMs": 78.491875,
+              "evalMs": 0.579291000000012
+            },
+            {
+              "wallMs": 127.42420800000036,
+              "maxRssKb": 81296,
+              "loadMs": 78.99125,
+              "evalMs": 0.6434580000000096
+            },
+            {
+              "wallMs": 128.45295799999985,
+              "maxRssKb": 81232,
+              "loadMs": 78.359583,
+              "evalMs": 0.6144170000000031
+            },
+            {
+              "wallMs": 126.47875000000022,
+              "maxRssKb": 81200,
+              "loadMs": 78.588791,
+              "evalMs": 0.6022920000000056
+            }
+          ]
+        },
+        {
+          "scenario": "hooks-passthrough",
+          "nodeVersion": "24.22.1",
+          "impl": "/Users/fengmk2/git/github.com/privatenumber/tsx/node_modules/.cache/tsx-baseline-8e4b900",
+          "moduleCount": 1000,
+          "results": [
+            {
+              "wallMs": 126.8247080000001,
+              "maxRssKb": 81248,
+              "loadMs": 77.998208,
+              "evalMs": 0.6236669999999975
+            },
+            {
+              "wallMs": 138.95466599999963,
+              "maxRssKb": 81632,
+              "loadMs": 87.711125,
+              "evalMs": 0.6244999999999976
+            },
+            {
+              "wallMs": 128.99987500000043,
+              "maxRssKb": 81552,
+              "loadMs": 79.555042,
+              "evalMs": 0.6490830000000045
+            },
+            {
+              "wallMs": 125.94012500000008,
+              "maxRssKb": 81312,
+              "loadMs": 77.102166,
+              "evalMs": 0.5984169999999978
+            },
+            {
+              "wallMs": 126.63825000000088,
+              "maxRssKb": 81232,
+              "loadMs": 76.656458,
+              "evalMs": 0.6113339999999994
+            },
+            {
+              "wallMs": 124.7650420000009,
+              "maxRssKb": 81152,
+              "loadMs": 76.346959,
+              "evalMs": 0.6036250000000081
+            },
+            {
+              "wallMs": 126.05079099999966,
+              "maxRssKb": 81584,
+              "loadMs": 76.97875,
+              "evalMs": 0.6395839999999993
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

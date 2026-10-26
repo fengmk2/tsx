@@ -27,25 +27,28 @@ execution without loading compiler artifacts.
 
 ## Integrated draft measurements
 
-[The native-adapter measurements](./native-benchmark.json) compare this draft with
-`8e4b900` on the same Node `24.22.1` executable and Apple M4 Max. Each cell contains
-seven fresh-process runs over 1,000 modules. These measurements include the tsx
-CLI, unlike the upstream comparison below. The existing benchmark runner groups
-samples by implementation; small warm-cache differences should not be treated as
-established speed improvements.
+[The napi-rs measurements](./napi-benchmark.json) compare revision `f3bf622` with
+`8e4b900` on Node `24.22.1`, macOS arm64, and an Apple M4 Max. Each value is the
+median of seven fresh-process runs and includes CLI startup. The TypeScript
+cases load 1,000 modules. Before uses esbuild; after uses the indicated Oxc
+format. The WASM comparison applies `NODE_OPTIONS=--no-addons` to both versions.
 
-| Workload | esbuild baseline median | Native draft median |
+| Workload | Native: before → after | WASM: before → after |
 | --- | ---: | ---: |
-| ESM TypeScript, cold transform cache | 545.96 ms | 257.55 ms |
-| CommonJS TypeScript, cold transform cache | 550.58 ms | 254.13 ms |
-| ESM TypeScript, warm cache | 147.80 ms | 146.07 ms |
-| CommonJS TypeScript, warm cache | 157.48 ms | 143.54 ms |
-| JavaScript passthrough, warm cache | 123.98 ms | 124.35 ms |
+| ESM TypeScript, cold cache | 554.30 → 262.36 ms | 562.97 → 289.35 ms |
+| CommonJS TypeScript, cold cache | 555.43 → 252.07 ms | 585.53 → 306.20 ms |
+| ESM TypeScript, warm cache | 146.96 → 147.28 ms | 155.19 → 151.97 ms |
+| CommonJS TypeScript, warm cache | 142.30 → 142.22 ms | 146.64 → 148.61 ms |
+| JavaScript passthrough, cold cache | 128.74 → 128.74 ms | 130.33 → 131.21 ms |
+| JavaScript passthrough, warm cache | 124.17 → 129.90 ms | 126.64 → 128.45 ms |
 
-The cold TypeScript cases take approximately half the baseline time. Warm-cache
-and passthrough behavior remain close to the baseline. Unsupported syntax still
-uses esbuild and can incur an extra eligibility parse on cache misses; these
-figures do not predict performance for every source mix.
+Cold ESM and CommonJS runs are 2.11× and 2.20× faster with native Oxc. The WASM
+runs are 1.95× and 1.91× faster. Warm-cache and passthrough differences are small;
+the runner groups samples by implementation, so they do not establish a
+consistent improvement. Unsupported syntax still uses esbuild and can incur an
+extra eligibility parse on cache misses. These figures do not predict performance
+for every source mix. [Earlier native-only measurements](./native-benchmark.json)
+remain available for reference.
 
 To repeat this comparison, build a separate checkout of `8e4b900`, then run:
 
@@ -55,10 +58,10 @@ node ./dist/cli.mjs scripts/benchmark/index.ts \
   --modules 1000 --runs 7 --cold --json
 ```
 
-Repeat without `--cold` for warm-cache measurements. Use a short, disposable
-`TMPDIR` to isolate the transform cache; long Unix socket paths exceed the CLI
-IPC path limit on macOS. No tests or builds ran concurrently with the recorded
-measurements.
+Repeat without `--cold` for warm-cache measurements. Repeat both commands with
+`NODE_OPTIONS=--no-addons` for WASM. Use a short, disposable `TMPDIR` to isolate
+the transform cache; long Unix socket paths exceed the CLI IPC path limit on
+macOS. No local tests or builds ran concurrently with these measurements.
 
 ## Initial upstream assessment
 
