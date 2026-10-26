@@ -65,7 +65,7 @@ const main = async () => {
 	});
 
 	if (values.help) {
-		process.stdout.write('node scripts/benchmark/oxc.mjs --candidate-dir <external npm install> [--runs 5] [--modules 300] [--iterations 200]\n');
+		process.stdout.write('node scripts/benchmark/oxc.js --candidate-dir <external npm install> [--runs 5] [--modules 300] [--iterations 200]\n');
 		return;
 	}
 

@@ -69,7 +69,7 @@ jobs:
         if: ${{ !matrix.image }}
         env:
           NATIVE_TARGET: ${{ matrix.target }}
-        run: node scripts/build-native.mjs --target "$NATIVE_TARGET"
+        run: node scripts/build-native.js --target "$NATIVE_TARGET"
         shell: bash
 
       - name: Check native transforms
@@ -95,7 +95,7 @@ jobs:
               npm install --global pnpm@10.9.0
               pnpm install --frozen-lockfile
               pnpm build:js
-              node scripts/build-native.mjs --target "$NATIVE_TARGET"
+              node scripts/build-native.js --target "$NATIVE_TARGET"
               node ./dist/cli.mjs tests/transform.ts
             '
 
@@ -133,7 +133,7 @@ jobs:
         run: pnpm build:js
 
       - name: Build WASM
-        run: node scripts/build-native.mjs --target wasm32-wasip1-threads
+        run: node scripts/build-native.js --target wasm32-wasip1-threads
 
       - name: Check transforms without native addons
         run: node ./dist/cli.mjs --no-addons tests/transform.ts
@@ -187,7 +187,7 @@ jobs:
           node ./dist/cli.mjs tests/native-release.ts
 
       - name: Assemble all targets
-        run: node scripts/assemble-native.mjs --artifacts-dir native-artifacts
+        run: node scripts/assemble-native.js --artifacts-dir native-artifacts
 
       - name: Upload assembled bindings
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -199,9 +199,9 @@ jobs:
 
       - name: Prepare platform packages and pack without rebuilding
         run: |
-          node scripts/prepare-native-packages.mjs --require-all
+          node scripts/prepare-native-packages.js --require-all
           pnpm exec clean-pkg-json
-          node scripts/pack-native.mjs --output-dir package-artifact
+          node scripts/pack-native.js --output-dir package-artifact
 
       - name: Upload packed package
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

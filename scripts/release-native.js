@@ -23,7 +23,7 @@ export const publish = async (_pluginConfig, context) => {
 	// @semantic-release/npm already sets the root version during its prepare step.
 	// Package preparation verifies the artifacts and sets platform versions before
 	// clean-pkg-json removes prepack, so the following root publish does not rebuild.
-	await execaNode(path.join(cwd, 'scripts/prepare-package.mjs'), [], {
+	await execaNode(path.join(cwd, 'scripts/prepare-package.js'), [], {
 		cwd,
 		env,
 		stdio: 'inherit',

@@ -84,7 +84,7 @@ The standalone Oxc comparison uses an external candidate install. It does not ad
 oxc_candidate_dir=$(mktemp -d)
 npm install --prefix "$oxc_candidate_dir" --no-audit --no-fund oxc-transform@0.155.0 @oxc-node/core@1.0.1
 pnpm build
-node scripts/benchmark/oxc.mjs --candidate-dir "$oxc_candidate_dir" --runs 7 --modules 1000 --iterations 500 > "$oxc_candidate_dir/benchmark.json"
+node scripts/benchmark/oxc.js --candidate-dir "$oxc_candidate_dir" --runs 7 --modules 1000 --iterations 500 > "$oxc_candidate_dir/benchmark.json"
 ```
 
 Run this on an otherwise idle machine. The JSON records the Node version, package versions, CPU, all timed samples, medians, and minima. `--runs`, `--modules`, and `--iterations` accept positive integers; defaults are 5, 300, and 200.

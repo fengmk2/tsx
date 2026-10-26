@@ -104,7 +104,7 @@ pnpm build # Compiles to `dist`
 `pnpm build:js` builds the JavaScript entries. `pnpm build:native` builds the host
 native transformer and the WASM fallback in `dist/native`. `pnpm build:wasm`
 builds only WASM. To build one native target, run
-`node scripts/build-native.mjs --target <rust-target-triple>`.
+`node scripts/build-native.js --target <rust-target-triple>`.
 
 The generated loader selects the matching native binary, then the bundled WASM
 compiler. Unsupported syntax or unavailable compilers use esbuild with the
@@ -117,9 +117,9 @@ The main package declares these as optional dependencies. Package managers selec
 native packages by operating system, CPU, and libc. WASM stays in the main package
 and remains available with `--no-addons` or omitted optional dependencies.
 
-`node scripts/prepare-native-packages.mjs` prepares the local host package and
+`node scripts/prepare-native-packages.js` prepares the local host package and
 updates package metadata. CI adds `--require-all` to require all native targets.
-`node scripts/pack-native.mjs --output-dir <new-directory>` packs the main package
+`node scripts/pack-native.js --output-dir <new-directory>` packs the main package
 and available native packages without publishing. Generated packages are ignored
 by Git; the main tarball excludes all `.node` files.
 

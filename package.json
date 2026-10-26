@@ -65,18 +65,18 @@
 	"homepage": "https://tsx.hirok.io",
 	"scripts": {
 		"build": "pnpm build:js && pnpm build:native",
-		"build:native": "node scripts/build-native.mjs",
+		"build:native": "node scripts/build-native.js",
 		"benchmark": "pnpm build && node ./dist/cli.mjs scripts/benchmark/index.ts",
 		"lint": "lintroll --node --cache --ignore-pattern 'docs/*.md' --ignore-pattern 'native/transform/target/**' --ignore-pattern 'npm/**' .",
 		"type-check": "tsc",
 		"test": "pnpm build && node ./dist/cli.mjs tests/index.ts",
-		"prepack": "node scripts/prepare-package.mjs",
+		"prepack": "node scripts/prepare-package.js",
 		"prepare": "skills-npm",
 		"docs:dev": "pnpm --filter=docs dev",
 		"docs:build": "pnpm --filter=docs build",
 		"docs:preview": "pnpm --filter=docs preview",
 		"build:js": "pkgroll --minify",
-		"build:wasm": "node scripts/build-native.mjs --wasm-only"
+		"build:wasm": "node scripts/build-native.js --wasm-only"
 	},
 	"engines": {
 		"node": ">=18.0.0"

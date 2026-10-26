@@ -116,7 +116,7 @@ npm install --prefix "$candidate_dir" --no-audit --no-fund \
 pnpm build
 node ./dist/cli.mjs scripts/oxc-evaluation.ts \
   --candidate-dir "$candidate_dir" > "$candidate_dir/compatibility.json"
-node scripts/benchmark/oxc.mjs \
+node scripts/benchmark/oxc.js \
   --candidate-dir "$candidate_dir" --runs 7 --modules 1000 --iterations 500 \
   > "$candidate_dir/performance.json"
 ```

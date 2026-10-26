@@ -40,7 +40,7 @@ for (const name of [
 	'native/transform/build.rs',
 	'native/transform/rust-toolchain.toml',
 	'native/transform/napi.json',
-	'scripts/build-native.mjs',
+	'scripts/build-native.js',
 	'pnpm-lock.yaml',
 	...await sourceFiles('native/transform/src'),
 ].sort()) {

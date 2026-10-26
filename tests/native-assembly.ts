@@ -14,9 +14,9 @@ const config = JSON.parse(await fs.readFile(path.join(root, 'native/transform/na
 	targets: string[];
 };
 const tree: FileTree = Object.fromEntries(await Promise.all([
-	'scripts/assemble-native.mjs',
-	'scripts/build-native.mjs',
-	'scripts/prepare-native-packages.mjs',
+	'scripts/assemble-native.js',
+	'scripts/build-native.js',
+	'scripts/prepare-native-packages.js',
 	'LICENSE',
 	'package.json',
 	'pnpm-lock.yaml',
@@ -62,7 +62,7 @@ const assemble = (
 	fixture: Fixture,
 	input: string,
 	output?: string,
-) => execaNode(fixture.getPath('scripts/assemble-native.mjs'), [
+) => execaNode(fixture.getPath('scripts/assemble-native.js'), [
 	'--artifacts-dir',
 	fixture.getPath(input),
 	...(output ? ['--output-dir', fixture.getPath(output)] : []),
@@ -166,7 +166,7 @@ await describe('native artifact assembly', () => {
 			...packageJson,
 			version: '1.2.3',
 		});
-		const prepared = await execaNode(fixture.getPath('scripts/prepare-native-packages.mjs'), ['--require-all']);
+		const prepared = await execaNode(fixture.getPath('scripts/prepare-native-packages.js'), ['--require-all']);
 		expect(prepared.exitCode).toBe(0);
 		const metadata = await fixture.readJson<{ optionalDependencies: Record<string, string> }>('package.json');
 		const previousOptional = packageJson.optionalDependencies as Record<string, string>;
@@ -232,7 +232,7 @@ await describe('native artifact assembly', () => {
 		await fixture.mkdir('npm');
 		await fixture.writeFile('npm/sentinel.txt', 'previous package output');
 		const before = await fixture.readFile('package.json', 'utf8');
-		const prepared = await execaNode(fixture.getPath('scripts/prepare-native-packages.mjs'), ['--require-all'], { reject: false });
+		const prepared = await execaNode(fixture.getPath('scripts/prepare-native-packages.js'), ['--require-all'], { reject: false });
 		expect(prepared.exitCode).not.toBe(0);
 		expect(await fixture.readFile('package.json', 'utf8')).toBe(before);
 		expect(await fixture.readFile('npm/sentinel.txt', 'utf8')).toBe('previous package output');

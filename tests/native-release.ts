@@ -26,7 +26,7 @@ const createRelease = async () => {
 			binaryName: 'transform',
 			targets: [...targets.map(([target]) => target), 'wasm32-wasip1-threads'],
 		}),
-		'scripts/prepare-package.mjs': `
+		'scripts/prepare-package.js': `
 			import fs from 'node:fs';
 			fs.appendFileSync('events.jsonl', JSON.stringify({ step: 'prepare' }) + '\\n');
 		`,
@@ -41,7 +41,7 @@ const createRelease = async () => {
 		`,
 		'bin/npm.cmd': `@echo off\r\n"${process.execPath}" "%~dp0npm" %*\r\n`,
 		'run.mjs': `
-			import { publish } from ${JSON.stringify(new URL('../scripts/release-native.mjs', import.meta.url).href)};
+			import { publish } from ${JSON.stringify(new URL('../scripts/release-native.js', import.meta.url).href)};
 			await publish({}, {
 				cwd: process.cwd(),
 				env: process.env,
@@ -94,7 +94,7 @@ const readEvents = async (fixture: Fixture) => {
 await describe('native release', () => {
 	test('registers platform publication before the main npm publisher', () => {
 		const config = createRequire(import.meta.url)('../release.config.cjs') as { plugins: string[] };
-		const plugin = './scripts/release-native.mjs';
+		const plugin = './scripts/release-native.js';
 		expect(config.plugins).toContain(plugin);
 		expect(config.plugins.indexOf(plugin)).toBeLessThan(config.plugins.indexOf('@semantic-release/npm'));
 	});

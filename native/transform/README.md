@@ -34,7 +34,7 @@ with the original source.
 The package includes WASM and its runtime dependencies on every platform. It does
 not depend on package managers selecting a `wasm32` optional package. The native
 CI workflow builds each target in `napi.json`, runs the transform tests, and
-checks duplicate artifact hashes. `prepare-native-packages.mjs` then uses napi-rs
+checks duplicate artifact hashes. `prepare-native-packages.js` then uses napi-rs
 `create-npm-dirs` and `artifacts` with the native targets to generate `npm/`
 platform packages. The main package references them through `optionalDependencies`
 and excludes `.node` files from its tarball. The generated loader selects the
@@ -58,7 +58,7 @@ does not establish WASM compatibility.
 From this directory, run `cargo test --locked` for the compiler gates. The pinned
 toolchain is in `rust-toolchain.toml`. Use `pnpm build:native` from the repository
 root to rebuild the optimized host addon and WASM. Use `--target <triple>` with
-`scripts/build-native.mjs` to build one target. The adapter does not load WASM for
+`scripts/build-native.js` to build one target. The adapter does not load WASM for
 a syntax rejection from a working native compiler, because both use the same Oxc
 compiler and eligibility rules.
 

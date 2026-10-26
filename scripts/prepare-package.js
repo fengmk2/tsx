@@ -11,7 +11,7 @@ const prebuiltDirectory = process.env.TSX_PREBUILT_NATIVE_DIR;
 if (prebuiltDirectory) {
 	await execa('pnpm', ['build:js'], options);
 	await execaNode(
-		fileURLToPath(new URL('assemble-native.mjs', import.meta.url)),
+		fileURLToPath(new URL('assemble-native.js', import.meta.url)),
 		['--artifacts-dir', prebuiltDirectory],
 		options,
 	);
@@ -20,7 +20,7 @@ if (prebuiltDirectory) {
 }
 
 await execaNode(
-	fileURLToPath(new URL('prepare-native-packages.mjs', import.meta.url)),
+	fileURLToPath(new URL('prepare-native-packages.js', import.meta.url)),
 	prebuiltDirectory ? ['--require-all'] : [],
 	options,
 );
