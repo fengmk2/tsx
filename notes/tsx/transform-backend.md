@@ -4,13 +4,16 @@ The transform-backend contract owns tsx's per-file integration semantics and bac
 
 ## Current integration boundary
 
-The draft first attempts the [native Oxc adapter](../../native/transform/README.md)
-on transform-cache misses. Its original-AST gate accepts eligible ESM and
+The draft first attempts the [Oxc adapter](../../native/transform/README.md)
+on transform-cache misses. The generated loader selects a platform native binary,
+then bundled WASM when native loading fails. Its original-AST gate accepts eligible ESM and
 already-CommonJS sources. Module conversion and unsupported inputs retain
 esbuild's per-file APIs. The [shared integration](../../src/utils/transform/index.ts)
 targets the running Node version; cache keys include source identity, transform
 options, the native protocol/compiler identity, esbuild version, and dynamic-import
-transformer version. Warm cache reads do not initialize the native addon.
+transformer version. Warm cache reads do not initialize either Oxc format. An Oxc
+syntax rejection goes directly to esbuild because WASM uses the same compiler.
+If neither Oxc format loads, the existing esbuild path remains available.
 
 The shared configuration enables source maps, whitespace minification, and `keepNames` without identifier or syntax minification ([options](../../src/utils/transform/get-esbuild-options.ts#L21-L50)).
 

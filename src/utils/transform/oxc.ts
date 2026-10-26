@@ -1,6 +1,7 @@
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import type { TransformOptions, TsconfigRaw } from 'esbuild';
+import { loadCompiler } from '../compiler-loading.js';
 import type { Transformed } from './apply-transformers.js';
 
 // Bump this when either the native protocol or its compatibility policy changes.
@@ -43,16 +44,24 @@ const loadBinding = () => {
 	if (binding === undefined) {
 		// A loader can re-enter transformation while resolving the binding.
 		binding = false;
-		try {
-			const candidate: NativeBinding = createRequire(import.meta.url)('#native-transform');
-			if (
-				typeof candidate.transformSync === 'function'
-				&& candidate.backendVersion() === oxcBackendVersion
-			) {
-				binding = candidate;
+		const require = createRequire(import.meta.url);
+		for (const load of [
+			() => require('#native-transform'),
+			() => require('#wasm-transform'),
+		]) {
+			try {
+				const candidate: NativeBinding = loadCompiler(load);
+				if (
+					typeof candidate.transformSync === 'function'
+					&& candidate.backendVersion() === oxcBackendVersion
+				) {
+					binding = candidate;
+					break;
+				}
+			} catch {
+				// The generated loader tries native then WASM. The direct WASM
+				// entry also handles a stale native protocol or a missing loader.
 			}
-		} catch {
-			// Missing or unsupported native artifacts retain the esbuild path.
 		}
 	}
 	return binding;

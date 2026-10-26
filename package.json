@@ -56,27 +56,33 @@
 	},
 	"imports": {
 		"#cjs-loader": "./dist/cjs/index.cjs",
-		"#native-transform": "./dist/transform-native.node"
+		"#native-transform": "./dist/native/index.cjs",
+		"#wasm-transform": "./dist/native/transform.wasi.cjs"
 	},
 	"packageManager": "pnpm@10.9.0",
 	"homepage": "https://tsx.hirok.io",
 	"scripts": {
-		"build": "pkgroll --minify && pnpm build:native",
+		"build": "pnpm build:js && pnpm build:native",
 		"build:native": "node scripts/build-native.mjs",
 		"benchmark": "pnpm build && node ./dist/cli.mjs scripts/benchmark/index.ts",
 		"lint": "lintroll --node --cache --ignore-pattern 'docs/*.md' --ignore-pattern 'native/transform/target/**' .",
 		"type-check": "tsc",
 		"test": "pnpm build && node ./dist/cli.mjs tests/index.ts",
-		"prepack": "pnpm build && clean-pkg-json",
+		"prepack": "node scripts/prepare-package.mjs",
 		"prepare": "skills-npm",
 		"docs:dev": "pnpm --filter=docs dev",
 		"docs:build": "pnpm --filter=docs build",
-		"docs:preview": "pnpm --filter=docs preview"
+		"docs:preview": "pnpm --filter=docs preview",
+		"build:js": "pkgroll --minify",
+		"build:wasm": "node scripts/build-native.mjs --wasm-only"
 	},
 	"engines": {
 		"node": ">=18.0.0"
 	},
 	"dependencies": {
+		"@emnapi/core": "1.11.3",
+		"@emnapi/runtime": "1.11.3",
+		"@napi-rs/wasm-runtime": "1.1.6",
 		"esbuild": "~0.28.0"
 	},
 	"optionalDependencies": {
@@ -84,6 +90,7 @@
 	},
 	"devDependencies": {
 		"@ampproject/remapping": "^2.3.0",
+		"@napi-rs/cli": "3.7.2",
 		"@types/cross-spawn": "^6.0.6",
 		"@types/is-glob": "^4.0.4",
 		"@types/node": "^22.15.29",

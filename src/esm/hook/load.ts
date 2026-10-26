@@ -9,6 +9,7 @@ import { transformDynamicImport } from '../../utils/transform/transform-dynamic-
 import { inlineSourceMap } from '../../source-map.js';
 import { isFeatureSupported, importAttributes, esmLoadReadFile } from '../../utils/node-features.js';
 import { isGlobalCjsLoaderActive } from '../../utils/cjs-loader-state.js';
+import { isCompilerLoading } from '../../utils/compiler-loading.js';
 import { parent } from '../../utils/ipc/client.js';
 import type { Message } from '../types.js';
 import {
@@ -226,7 +227,7 @@ const prepareLoad = (
 	hookData: Data,
 	url: string,
 ) => {
-	if (!hookData.active) {
+	if (!hookData.active || isCompilerLoading()) {
 		return false;
 	}
 

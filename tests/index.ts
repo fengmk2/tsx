@@ -23,6 +23,19 @@ import { resolutionPriority } from './specs/resolution-priority';
 import { esmHookResolve } from './specs/esm-hook-resolve';
 import { apiDeclarations } from './specs/api-declarations';
 
+const wasmTransformSpec = (node: Awaited<ReturnType<typeof createNode>>) => test('WASM transform backend', async () => {
+	const { exitCode } = await node.tsx([
+		'--no-addons',
+		fileURLToPath(new URL('transform.ts', import.meta.url)),
+	], {
+		env: {
+			TESTONLY: 'Oxc transform',
+			DEBUG: undefined,
+		},
+	});
+	expect(exitCode).toBe(0);
+}, 60_000);
+
 (async () => {
 	// Prevent stuck CI runs
 	setProcessTimeout(5 * 60 * 1000);
@@ -40,6 +53,7 @@ import { apiDeclarations } from './specs/api-declarations';
 
 		const [primaryNodeVersion, ...compatNodeVersions] = nodeVersions;
 		const primaryNode = await createNode(primaryNodeVersion);
+		await wasmTransformSpec(primaryNode);
 
 		// The primary Node version runs all suites sequentially.
 		// Process-heavy suites (cli signals, watch file watchers, PTY shells)
@@ -73,6 +87,7 @@ import { apiDeclarations } from './specs/api-declarations';
 					});
 					expect(exitCode).toBe(0);
 				}, 60_000);
+				await wasmTransformSpec(node);
 			});
 		}
 	});

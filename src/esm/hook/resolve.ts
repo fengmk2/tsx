@@ -22,6 +22,7 @@ import {
 } from '../../utils/path-utils.js';
 import type { TsxRequest } from '../types.js';
 import { isGlobalCjsLoaderActive } from '../../utils/cjs-loader-state.js';
+import { isCompilerLoading } from '../../utils/compiler-loading.js';
 import { esmLoadReadFile, isFeatureSupported } from '../../utils/node-features.js';
 import { logEsm as log, debugEnabled } from '../../utils/debug.js';
 import { getPackageSubpathDirectoryInfo } from './package-subpath.js';
@@ -925,6 +926,7 @@ export const createResolve = (
 	) => {
 		if (
 			!hookData.active
+			|| isCompilerLoading()
 			|| specifier.startsWith('node:')
 		) {
 			return nextResolve(specifier, context);
@@ -1104,6 +1106,7 @@ export const createResolveSync = (
 	) => {
 		if (
 			!hookData.active
+			|| isCompilerLoading()
 			|| specifier.startsWith('node:')
 			|| (isCommonJsRequireContext(context) && isGlobalCjsLoaderActive())
 		) {

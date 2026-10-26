@@ -11,8 +11,19 @@ other inputs use the original esbuild transform on the unchanged source.
 The adapter uses the same Oxc compiler as oxc-node. It supplies the per-call
 configuration and pre-transform AST capability check that the published packages
 lack. It does not install oxc-node's hooks or introduce a second source parser.
-The complete native replacement and multi-platform release pipeline remain
-unfinished. The implementation is kept in the fork's draft PR.
+The adapter now builds through napi-rs and has native and WASM formats. The
+generated loader selects a matching native binary, then bundled WASM. Semantic
+rejections still use esbuild directly. CI assembles the configured platform
+binaries and WASM into the main package; no optional WASM installation settings
+are required. Complete Oxc syntax coverage remains unfinished. The implementation
+is kept in the fork's draft PR.
+
+The pinned CLI, Rust bindings, and WASM runtime remain compatible with Node 18.
+The WASM path runs on Node `18.20.8` and newer versions in the compatibility
+matrix. Node `18.0.0` retains native execution and esbuild fallback because its
+WASI support cannot run this threaded WASM module. The package checks include
+native loading, disabled addons, unavailable compiler artifacts, and warm-cache
+execution without loading compiler artifacts.
 
 ## Integrated draft measurements
 

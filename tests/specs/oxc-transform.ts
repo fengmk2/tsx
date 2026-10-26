@@ -1,12 +1,17 @@
 import assert from 'node:assert/strict';
-import fs from 'node:fs/promises';
-import { pathToFileURL } from 'node:url';
+import { createRequire } from 'node:module';
+import path from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { runInNewContext } from 'node:vm';
 import { describe, test, expect } from 'manten';
 import { createFixture } from 'fs-fixture';
 import { execaNode } from 'execa';
-import { transformSync as esbuildTransformSync, type TransformOptions } from 'esbuild';
-import { attemptOxcTransform } from '../../src/utils/transform/oxc.js';
+import {
+	buildSync as esbuildBuildSync,
+	transformSync as esbuildTransformSync,
+	type TransformOptions,
+} from 'esbuild';
+import { attemptOxcTransform, oxcBackendVersion } from '../../src/utils/transform/oxc.js';
 import { cacheConfig } from '../../src/utils/transform/get-esbuild-options.js';
 import { transform, transformEsmSync, transformSync } from '../../src/utils/transform/index.js';
 import { inlineSourceMap } from '../../src/source-map.js';
@@ -19,9 +24,33 @@ const options: TransformOptions = {
 
 const importOutput = (code: string) => import(`data:text/javascript;base64,${Buffer.from(code).toString('base64')}`);
 
+const bundleAdapter = () => esbuildBuildSync({
+	entryPoints: [fileURLToPath(new URL('../../src/utils/transform/oxc.ts', import.meta.url))],
+	bundle: true,
+	platform: 'node',
+	format: 'esm',
+	target: `node${process.versions.node}`,
+	write: false,
+}).outputFiles[0].text;
+
 export const oxcTransformSpec = () => describe('Oxc transform', () => {
-	describe('native path', () => {
-		test('transforms eligible TypeScript with the native binding', async () => {
+	test('loads the generated compiler binding for the active Node mode', () => {
+		const require = createRequire(import.meta.url);
+		const binding = require('#native-transform');
+		expect(binding.backendVersion()).toBe(oxcBackendVersion);
+		const loadedNativeArtifacts = Object.keys(require.cache).filter(filename => (
+			path.basename(filename).startsWith('transform.') && filename.endsWith('.node')
+		));
+		if (process.execArgv.includes('--no-addons')) {
+			expect(loadedNativeArtifacts).toStrictEqual([]);
+			assert(require.cache[require.resolve('#wasm-transform')], 'Disabled addons must select the bundled WASM compiler');
+		} else {
+			expect(loadedNativeArtifacts.length).toBe(1);
+		}
+	});
+
+	describe('Oxc path', () => {
+		test('transforms eligible TypeScript with the selected Oxc binding', async () => {
 			const result = attemptOxcTransform(`
 				interface Value { value: number }
 				export const makeValue = (value: number): Value => ({ value });
@@ -152,22 +181,53 @@ export const oxcTransformSpec = () => describe('Oxc transform', () => {
 		});
 	});
 
-	test('retains compatibility fallback when the native artifact is missing', async () => {
-		const source = await fs.readFile(new URL('../../src/utils/transform/oxc.ts', import.meta.url), 'utf8');
-		const { code } = esbuildTransformSync(source, {
-			loader: 'ts',
-			format: 'esm',
-			target: `node${process.versions.node}`,
-		});
+	test('retains compatibility fallback when both compiler artifacts are missing', async () => {
 		await using fixture = await createFixture({
 			'package.json': JSON.stringify({
 				type: 'module',
-				imports: { '#native-transform': './missing.node' },
+				imports: {
+					'#native-transform': './missing-native.cjs',
+					'#wasm-transform': './missing-wasm.cjs',
+				},
 			}),
-			'adapter.mjs': code,
+			'adapter.mjs': bundleAdapter(),
 		});
 		const adapter = await import(pathToFileURL(fixture.getPath('adapter.mjs')).href);
 		expect(adapter.attemptOxcTransform('export const value: number = 42;', options)).toBeUndefined();
+	});
+
+	test('tries WASM when the native binding has an incompatible protocol', async () => {
+		const transformedCode = 'export const value = 42;';
+		await using fixture = await createFixture({
+			'package.json': JSON.stringify({
+				type: 'module',
+				imports: {
+					'#native-transform': './native.cjs',
+					'#wasm-transform': './wasm.cjs',
+				},
+			}),
+			'adapter.mjs': bundleAdapter(),
+			'native.cjs': `module.exports = {
+				backendVersion: () => 'incompatible-protocol',
+				transformSync() { throw new Error('The incompatible compiler must not run'); },
+			};`,
+			'wasm.cjs': `module.exports = {
+				backendVersion: () => ${JSON.stringify(oxcBackendVersion)},
+				transformSync: (filename, source) => ({
+					code: ${JSON.stringify(transformedCode)},
+					map: JSON.stringify({ version: 3, sources: [filename], sourcesContent: [source], names: [], mappings: '' }),
+				}),
+			};`,
+		});
+		const adapter = await import(pathToFileURL(fixture.getPath('adapter.mjs')).href);
+		const originalSource = 'export const value: number = 42;';
+		const result = adapter.attemptOxcTransform(originalSource, {
+			...options,
+			sourcesContent: true,
+		});
+		assert(result);
+		expect(result.code).toBe(transformedCode);
+		expect(result.map.sourcesContent).toStrictEqual([originalSource]);
 	});
 
 	test('preserves CommonJS module conversion through the compatibility backend', () => {

@@ -22,17 +22,34 @@ The CommonJS path does not introduce strict mode. Code generation emits tsx's
 filename banner before the source and accounts for it in generated map positions.
 Files with a hashbang, ESM syntax, or top-level await use the compatibility path.
 
-`pnpm build` builds the JavaScript entries and this crate, then places the host
-artifact at `dist/transform-native.node`. The runtime loads it only after a cache
-miss and checks its protocol version. An unavailable, incompatible, or stale
-artifact leaves the esbuild path available. Both backends are represented in the
-cache identity, even when the native artifact is not loaded.
+`pnpm build` builds the JavaScript entries, the host native binary, and a WASM
+version of this crate. napi-rs generates the platform loader at
+`dist/native/index.cjs`. It tries the matching native binary, then the bundled
+`transform.wasi.cjs` loader and WASM file. The adapter also tries the direct WASM
+entry if the native protocol is stale. Compiler loading occurs only after a cache
+miss and supported-option checks. Both formats expose the same protocol and
+transform function; syntax rejected by either format goes directly to esbuild
+with the original source.
+
+The package includes WASM and its runtime dependencies on every platform. It does
+not depend on package managers selecting a `wasm32` optional package. The native
+CI workflow builds each target in `napi.json`, runs the transform tests, checks
+duplicate artifact hashes, and assembles all binaries into the root package.
+Bundling the full set trades a larger download for a self-contained artifact set.
+
+The CLI, Rust bindings, and WASM runtime use compatible pinned versions. The WASM
+runtime retains Node 18 support; newer runtime releases raise the minimum Node
+version. Early Node 18 releases have incompatible or unavailable WASI support, so
+they retain native transforms and the final esbuild fallback. A native build alone
+does not establish WASM compatibility.
 
 From this directory, run `cargo test --locked` for the compiler gates. The pinned
 toolchain is in `rust-toolchain.toml`. Use `pnpm build:native` from the repository
-root to rebuild and copy the optimized addon.
+root to rebuild the optimized host addon and WASM. Use `--target <triple>` with
+`scripts/build-native.mjs` to build one target. The adapter does not load WASM for
+a syntax rejection from a working native compiler, because both use the same Oxc
+compiler and eligibility rules.
 
-This is a draft implementation. A full native compiler and multi-platform release
-assembly remain separate requirements. The existing compatibility backend is
-still required; a passing test suite does not establish equivalence for all input
-programs.
+This is a draft implementation. Complete Oxc syntax coverage remains unfinished.
+The existing compatibility backend is still required; a passing test suite does
+not establish equivalence for all input programs.
