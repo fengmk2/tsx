@@ -37,7 +37,7 @@ CI workflow builds each target in `napi.json`, runs the transform tests, checks
 duplicate artifact hashes, and assembles all binaries into the root package.
 Bundling the full set trades a larger download for a self-contained artifact set.
 
-The CLI, Rust bindings, and WASM runtime use compatible pinned versions. The WASM
+The lockfiles record compatible CLI, Rust binding, and WASM runtime versions. The WASM
 runtime retains Node 18 support; newer runtime releases raise the minimum Node
 version. Early Node 18 releases have incompatible or unavailable WASI support, so
 they retain native transforms and the final esbuild fallback. A native build alone

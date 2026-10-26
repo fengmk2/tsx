@@ -18,7 +18,7 @@ binaries and WASM into the main package; no optional WASM installation settings
 are required. Complete Oxc syntax coverage remains unfinished. The implementation
 is kept in the fork's draft PR.
 
-The pinned CLI, Rust bindings, and WASM runtime remain compatible with Node 18.
+The CLI, Rust bindings, and WASM runtime versions in the lockfiles support Node 18.
 The WASM path runs on Node `18.20.8` and newer versions in the compatibility
 matrix. Node `18.0.0` retains native execution and esbuild fallback because its
 WASI support cannot run this threaded WASM module. The package checks include

@@ -11,13 +11,13 @@ importers:
   .:
     dependencies:
       '@emnapi/core':
-        specifier: 1.11.3
+        specifier: ~1.11.3
         version: 1.11.3
       '@emnapi/runtime':
-        specifier: 1.11.3
+        specifier: ~1.11.3
         version: 1.11.3
       '@napi-rs/wasm-runtime':
-        specifier: 1.1.6
+        specifier: ~1.1.6
         version: 1.1.6(@emnapi/core@1.11.3)(@emnapi/runtime@1.11.3)
       esbuild:
         specifier: ~0.28.0
@@ -27,7 +27,7 @@ importers:
         specifier: ^2.3.0
         version: 2.3.0
       '@napi-rs/cli':
-        specifier: 3.7.2
+        specifier: ^3.7.2
         version: 3.7.2(@emnapi/runtime@1.11.3)(@types/node@22.15.30)(node-addon-api@7.1.1)
       '@types/cross-spawn':
         specifier: ^6.0.6
@@ -78,7 +78,7 @@ importers:
         specifier: ^1.0.0
         version: 1.0.0
       get-tsconfig:
-        specifier: 5.0.0-beta.5
+        specifier: ^5.0.0-beta.5
         version: 5.0.0-beta.5
       is-glob:
         specifier: ^4.0.3
@@ -111,7 +111,7 @@ importers:
         specifier: ^1.1.1
         version: 1.1.1
       semantic-release:
-        specifier: 25.0.6
+        specifier: ^25.0.6
         version: 25.0.6(typescript@5.5.2)
       skills-npm:
         specifier: ^1.2.0
