@@ -13,9 +13,9 @@ configuration and pre-transform AST capability check that the published packages
 lack. It does not install oxc-node's hooks or introduce a second source parser.
 The adapter now builds through napi-rs and has native and WASM formats. The
 generated loader selects a matching native binary, then bundled WASM. Semantic
-rejections still use esbuild directly. CI assembles the configured platform
-binaries and WASM into the main package; no optional WASM installation settings
-are required. Complete Oxc syntax coverage remains unfinished. The implementation
+rejections still use esbuild directly. CI uses napi-rs to assemble separate native
+platform packages. The main package uses optional dependencies for native binaries
+and includes WASM directly. Complete Oxc syntax coverage remains unfinished. The implementation
 is kept in the fork's draft PR.
 
 The CLI, Rust bindings, and WASM runtime versions in the lockfiles support Node 18.

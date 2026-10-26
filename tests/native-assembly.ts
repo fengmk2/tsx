@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { runInNewContext } from 'node:vm';
 import { describe, test, expect } from 'manten';
 import { createFixture, type FileTree } from 'fs-fixture';
 import { execaNode } from 'execa';
@@ -9,11 +10,14 @@ import { parseTriple } from '@napi-rs/cli';
 const root = fileURLToPath(new URL('../', import.meta.url));
 const config = JSON.parse(await fs.readFile(path.join(root, 'native/transform/napi.json'), 'utf8')) as {
 	binaryName: string;
+	packageName: string;
 	targets: string[];
 };
 const tree: FileTree = Object.fromEntries(await Promise.all([
 	'scripts/assemble-native.mjs',
 	'scripts/build-native.mjs',
+	'scripts/prepare-native-packages.mjs',
+	'LICENSE',
 	'package.json',
 	'pnpm-lock.yaml',
 	'native/transform/Cargo.toml',
@@ -151,5 +155,87 @@ await describe('native artifact assembly', () => {
 		expect(result.exitCode).not.toBe(0);
 		expect(result.stderr).toContain('Output directory must be empty');
 		expect(await fixture.readFile('keep/sentinel.txt', 'utf8')).toBe('user data');
+	});
+
+	test('prepares separate platform packages for the final release version', async () => {
+		await using fixture = await createArtifacts();
+		const assembled = await assemble(fixture, 'raw');
+		expect(assembled.exitCode).toBe(0);
+		const packageJson = await fixture.readJson<Record<string, unknown>>('package.json');
+		await fixture.writeJson('package.json', {
+			...packageJson,
+			version: '1.2.3',
+		});
+		const prepared = await execaNode(fixture.getPath('scripts/prepare-native-packages.mjs'), ['--require-all']);
+		expect(prepared.exitCode).toBe(0);
+		const metadata = await fixture.readJson<{ optionalDependencies: Record<string, string> }>('package.json');
+		const previousOptional = packageJson.optionalDependencies as Record<string, string>;
+		expect(metadata.optionalDependencies.fsevents).toBe(previousOptional.fsevents);
+		for (const target of config.targets) {
+			const {
+				platform, arch, abi, platformArchABI,
+			} = parseTriple(target);
+			if (platform === 'wasi') {
+				expect(await fixture.exists(`npm/${platformArchABI}`)).toBe(false);
+				continue;
+			}
+			const name = `${config.packageName}-${platformArchABI}`;
+			const manifest = await fixture.readJson<Record<string, unknown>>(`npm/${platformArchABI}/package.json`);
+			expect(manifest).toMatchObject({
+				name,
+				version: '1.2.3',
+				os: [platform],
+				cpu: [arch],
+				main: `${config.binaryName}.${platformArchABI}.node`,
+			});
+			if (abi === 'gnu' || abi === 'musl') {
+				expect(manifest.libc).toStrictEqual([abi === 'gnu' ? 'glibc' : 'musl']);
+			}
+			expect(metadata.optionalDependencies[name]).toBe('~1.2.3');
+			expect(await fixture.readFile(`npm/${platformArchABI}/${manifest.main}`, 'utf8')).toBe(`artifact for ${target}`);
+		}
+		expect(await fixture.exists('dist/native/transform.wasm32-wasi.wasm')).toBe(true);
+		const loader = await fixture.readFile('dist/native/index.cjs', 'utf8');
+		const load = (version: string) => {
+			const module = { exports: {} as { backendVersion: () => string } };
+			runInNewContext(loader, {
+				module,
+				process: {
+					platform: 'darwin',
+					arch: 'arm64',
+					env: { NAPI_RS_ENFORCE_VERSION_CHECK: '1' },
+				},
+				require: (specifier: string) => {
+					if (specifier === 'fs') {
+						return {};
+					}
+					if (specifier === `${config.packageName}-darwin-arm64`) {
+						return { backendVersion: () => 'selected platform package' };
+					}
+					if (specifier === `${config.packageName}-darwin-arm64/package.json`) {
+						return { version };
+					}
+					throw new Error(`Unavailable fixture module: ${specifier}`);
+				},
+			});
+			return module.exports.backendVersion();
+		};
+		expect(load('1.2.3')).toBe('selected platform package');
+		expect(() => load('1.2.2')).toThrow();
+	});
+
+	test('rejects incomplete release packages before changing existing output', async () => {
+		await using fixture = await createArtifacts();
+		const assembled = await assemble(fixture, 'raw');
+		expect(assembled.exitCode).toBe(0);
+		await fixture.rm('dist/native/transform.darwin-x64.node');
+		await fixture.mkdir('npm');
+		await fixture.writeFile('npm/sentinel.txt', 'previous package output');
+		const before = await fixture.readFile('package.json', 'utf8');
+		const prepared = await execaNode(fixture.getPath('scripts/prepare-native-packages.mjs'), ['--require-all'], { reject: false });
+		expect(prepared.exitCode).not.toBe(0);
+		expect(await fixture.readFile('package.json', 'utf8')).toBe(before);
+		expect(await fixture.readFile('npm/sentinel.txt', 'utf8')).toBe('previous package output');
+		expect(await fixture.readFile('dist/native/index.cjs', 'utf8')).toBe('shared loader');
 	});
 });

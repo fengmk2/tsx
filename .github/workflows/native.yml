@@ -9,7 +9,7 @@ on:
         description: Assembled native and WASM files for dist/native
         value: ${{ jobs.assemble.outputs.native-artifact }}
       package-artifact:
-        description: Packed package containing all native targets and WASM
+        description: Packed main package and separate native platform packages
         value: ${{ jobs.assemble.outputs.package-artifact }}
 
 permissions:
@@ -182,7 +182,9 @@ jobs:
           path: native-artifacts
 
       - name: Check artifact assembly
-        run: node ./dist/cli.mjs tests/native-assembly.ts
+        run: |
+          node ./dist/cli.mjs tests/native-assembly.ts
+          node ./dist/cli.mjs tests/native-release.ts
 
       - name: Assemble all targets
         run: node scripts/assemble-native.mjs --artifacts-dir native-artifacts
@@ -195,29 +197,41 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-      - name: Pack without rebuilding native artifacts
+      - name: Prepare platform packages and pack without rebuilding
         run: |
+          node scripts/prepare-native-packages.mjs --require-all
           pnpm exec clean-pkg-json
-          mkdir package-artifact
-          npm pack --ignore-scripts --pack-destination package-artifact
+          node scripts/pack-native.mjs --output-dir package-artifact
 
       - name: Upload packed package
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: native-package
-          path: package-artifact/*.tgz
+          path: package-artifact/
           if-no-files-found: error
           retention-days: 7
 
   package-smoke:
-    name: Packed package (Node ${{ matrix.node }})
+    name: Packed package (${{ matrix.os }}, Node ${{ matrix.node }})
     needs: assemble
-    runs-on: ubuntu-22.04
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
-        node: [18.0.0, 18.20.8, 24.15.0]
+        include:
+          - os: ubuntu-22.04
+            node: 18.0.0
+          - os: ubuntu-22.04
+            node: 18.20.8
+          - os: ubuntu-22.04
+            node: 24.15.0
+          - os: macos-15
+            node: 24.15.0
+          - os: macos-15-intel
+            node: 24.15.0
+          - os: windows-2022
+            node: 24.15.0
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -251,7 +265,4 @@ jobs:
           path: package-artifact
 
       - name: Check native, WASM, and compatibility fallback
-        run: |
-          package_files=("$PWD"/package-artifact/*.tgz)
-          test "${#package_files[@]}" -eq 1
-          node ./dist/cli.mjs tests/native-packaging.ts "${package_files[0]}"
+        run: node ./dist/cli.mjs tests/native-packaging.ts package-artifact

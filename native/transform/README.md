@@ -33,12 +33,24 @@ with the original source.
 
 The package includes WASM and its runtime dependencies on every platform. It does
 not depend on package managers selecting a `wasm32` optional package. The native
-CI workflow builds each target in `napi.json`, runs the transform tests, checks
-duplicate artifact hashes, and assembles all binaries into the root package.
-Bundling the full set trades a larger download for a self-contained artifact set.
+CI workflow builds each target in `napi.json`, runs the transform tests, and
+checks duplicate artifact hashes. `prepare-native-packages.mjs` then uses napi-rs
+`create-npm-dirs` and `artifacts` with the native targets to generate `npm/`
+platform packages. The main package references them through `optionalDependencies`
+and excludes `.node` files from its tarball. The generated loader selects the
+installed platform package. Local source builds can still load a binary directly
+from `dist/native`.
 
-The lockfiles record compatible CLI, Rust binding, and WASM runtime versions. The WASM
-runtime retains Node 18 support; newer runtime releases raise the minimum Node
+Older npm versions can install both glibc and musl packages for the current Linux
+CPU. The loader still selects the matching binary.
+
+WASM stays in the main package rather than a CPU-filtered `wasm32` package. This
+preserves the fallback when native addons or optional dependencies are disabled.
+The release loader uses the final package version, and native packages publish
+before the main package. Package names use the `packageName` prefix in `napi.json`.
+
+The lockfiles record compatible CLI, Rust binding, and WASM runtime versions.
+The WASM runtime retains Node 18 support; newer runtime releases raise the minimum Node
 version. Early Node 18 releases have incompatible or unavailable WASI support, so
 they retain native transforms and the final esbuild fallback. A native build alone
 does not establish WASM compatibility.

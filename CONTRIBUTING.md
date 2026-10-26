@@ -111,11 +111,22 @@ compiler. Unsupported syntax or unavailable compilers use esbuild with the
 original source. Older Node versions without compatible WASI support retain the
 native and esbuild paths.
 
-The native CI workflow builds and runs each configured target before assembling
-one package. It includes all native binaries and the WASM files, so users do not
-need optional package installation settings. This increases the package size.
-The release job supplies `TSX_PREBUILT_NATIVE_DIR` to the package preparation
-script to use these checked artifacts instead of rebuilding only the host target.
+The native CI workflow builds each configured target, then uses napi-rs
+`create-npm-dirs` and `artifacts` to generate platform packages in `npm/`.
+The main package declares these as optional dependencies. Package managers select
+native packages by operating system, CPU, and libc. WASM stays in the main package
+and remains available with `--no-addons` or omitted optional dependencies.
+
+`node scripts/prepare-native-packages.mjs` prepares the local host package and
+updates package metadata. CI adds `--require-all` to require all native targets.
+`node scripts/pack-native.mjs --output-dir <new-directory>` packs the main package
+and available native packages without publishing. Generated packages are ignored
+by Git; the main tarball excludes all `.node` files.
+
+The release job supplies `TSX_PREBUILT_NATIVE_DIR` to reuse checked artifacts.
+It publishes the platform packages before the main package. The package prefix
+comes from `native/transform/napi.json`; publishing requires ownership and npm
+authentication for each generated package.
 
 > [!TIP]
 > Temporarily disable minification by removing `--minify` in `package.json#scripts.build:js` for easier debugging.

@@ -62,4 +62,5 @@ jobs:
           TSX_PREBUILT_NATIVE_DIR: ${{ runner.temp }}/native-bindings
           # Preserve maintainer attribution for releases and issue comments.
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        # The native publish hook runs before @semantic-release/npm publishes tsx.
         run: pnpm exec semantic-release

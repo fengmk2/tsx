@@ -31,6 +31,9 @@ dist
 # Native transformer build output
 native/transform/target
 
+# Generated napi-rs platform packages
+/npm
+
 # Link config
 link.config.json
 

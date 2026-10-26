@@ -19,4 +19,10 @@ if (prebuiltDirectory) {
 	await execa('pnpm', ['build'], options);
 }
 
+await execaNode(
+	fileURLToPath(new URL('prepare-native-packages.mjs', import.meta.url)),
+	prebuiltDirectory ? ['--require-all'] : [],
+	options,
+);
+
 await execa('pnpm', ['exec', 'clean-pkg-json'], options);

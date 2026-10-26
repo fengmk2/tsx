@@ -1,5 +1,6 @@
 {
 	"binaryName": "transform",
+	"packageName": "@fengmk2/tsx-native",
 	"targets": [
 		"x86_64-apple-darwin",
 		"aarch64-apple-darwin",
