@@ -90,6 +90,8 @@ jobs:
               curl --fail --silent --show-error https://sh.rustup.rs --output /tmp/rustup.sh
               sh /tmp/rustup.sh -y --profile minimal --default-toolchain none
               export PATH="$HOME/.cargo/bin:$PATH"
+              export CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER=gcc
+              export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=gcc
               npm install --global pnpm@10.9.0
               pnpm install --frozen-lockfile
               pnpm build:js
