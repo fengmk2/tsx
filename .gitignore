@@ -22,6 +22,9 @@ node_modules
 # Cache
 .eslintcache
 
+# Raw benchmark samples
+/notes/tsx/*-benchmark.json
+
 # Distribution
 dist
 

@@ -27,7 +27,7 @@ execution without loading compiler artifacts.
 
 ## Integrated draft measurements
 
-[The napi-rs measurements](./napi-benchmark.json) compare revision `f3bf622` with
+The following napi-rs measurements compare revision `f3bf622` with
 `8e4b900` on Node `24.22.1`, macOS arm64, and an Apple M4 Max. Each value is the
 median of seven fresh-process runs and includes CLI startup. The TypeScript
 cases load 1,000 modules. Before uses esbuild; after uses the indicated Oxc
@@ -47,8 +47,7 @@ runs are 1.95× and 1.91× faster. Warm-cache and passthrough differences are sm
 the runner groups samples by implementation, so they do not establish a
 consistent improvement. Unsupported syntax still uses esbuild and can incur an
 extra eligibility parse on cache misses. These figures do not predict performance
-for every source mix. [Earlier native-only measurements](./native-benchmark.json)
-remain available for reference.
+for every source mix.
 
 To repeat this comparison, build a separate checkout of `8e4b900`, then run:
 
@@ -68,7 +67,7 @@ macOS. No local tests or builds ran concurrently with these measurements.
 The current Oxc packages can accelerate some TypeScript workloads, but they cannot replace tsx's backend while preserving its full behavior. Do not switch the production backend on the strength of ESM benchmarks. This assessment covers npm `@oxc-node/core@1.0.1`, `oxc-transform@0.155.0`, and the tsx checkout at `4473971` with `esbuild@0.28.0`, reviewed on 2026-10-25. The [oxc-node source revision and APIs](../oxc-node/README.md) are recorded separately.
 
 The initial evaluation did not establish full compatibility for either published
-package. The following upstream comparisons and raw measurements describe the
+package. The following upstream comparisons describe the
 original esbuild-only checkout, not the new native adapter. They remain useful
 for identifying the compiler gaps that the draft must address or delegate.
 
@@ -116,17 +115,20 @@ npm install --prefix "$candidate_dir" --no-audit --no-fund \
   @oxc-node/core@1.0.1 oxc-transform@0.155.0
 pnpm build
 node ./dist/cli.mjs scripts/oxc-evaluation.ts \
-  --candidate-dir "$candidate_dir" > compatibility.json
+  --candidate-dir "$candidate_dir" > "$candidate_dir/compatibility.json"
 node scripts/benchmark/oxc.mjs \
   --candidate-dir "$candidate_dir" --runs 7 --modules 1000 --iterations 500 \
-  > performance.json
+  > "$candidate_dir/performance.json"
 ```
 
 The compatibility command exits successfully when the experiment completes; inspect its JSON `status` and individual results. A reference failure, timeout, or missing installation fails the command. The benchmark checks process exit codes and the evaluated graph total. Run measurements without other builds or tests, and use the same Node executable throughout.
 
+Keep raw JSON output in the disposable directory. Commit benchmark scripts,
+environment details, and result summaries rather than temporary samples.
+
 ## Performance observations
 
-[Raw measurements](./oxc-benchmark.json) retain all seven samples for every case. These were collected on an otherwise idle Apple M4 Max, macOS arm64, Node `24.22.1`, using the package versions above. The runtime experiment uses `node --import`, so it measures hooks, resolution, transforms, and execution without either project's CLI wrapper. "Cold" means an empty transform cache, not an empty operating-system filesystem cache.
+The following medians summarize seven samples per case, collected on an otherwise idle Apple M4 Max, macOS arm64, Node `24.22.1`, using the package versions above. The runtime experiment uses `node --import`, so it measures hooks, resolution, transforms, and execution without either project's CLI wrapper. "Cold" means an empty transform cache, not an empty operating-system filesystem cache.
 
 | Runtime workload | tsx median | oxc-node median |
 | --- | ---: | ---: |
