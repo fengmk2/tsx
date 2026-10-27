@@ -103,6 +103,49 @@ performance. Options rejected before Oxc loads can have a lower cost.
 See [the recorded comparison](../../notes/tsx/oxc-evaluation.md#fallback-overhead)
 for the baseline definition and results. Keep raw JSON outside version control.
 
+## RSSHub startup
+
+[RSSHub](https://github.com/DIYgod/RSSHub) uses `tsx` for its development server
+and route generation. Its development server imports the route source tree.
+The RSSHub benchmark measures CLI startup through the first successful local
+`/healthz` response, including module loading, application initialization, and
+the first health request. It omits the watch process and debugger.
+
+Prepare a checkout of RSSHub revision
+`238226edda3dfcc948d6531971efaaf890865d0d` and install its locked dependencies:
+
+```sh
+PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 PUPPETEER_SKIP_DOWNLOAD=1 \
+  pnpm install --frozen-lockfile --ignore-scripts
+```
+
+Build the current tsx checkout, including native and WASM bindings, and a
+separate esbuild-only checkout of `8e4b900`. Then run from the current checkout:
+
+```sh
+node scripts/benchmark/rsshub.js \
+  --project-dir /path/to/RSSHub \
+  --baseline-dir /path/to/esbuild-only-tsx \
+  --runs 7
+```
+
+Repeat with `--no-addons` for WASM. This flag applies to both implementations.
+The script checks the selected Oxc format before measuring. JSON goes to stdout;
+progress goes to stderr. Keep raw output outside version control.
+
+Each sample starts a fresh process. Cold runs clear an isolated transform cache;
+warm runs reuse the cache from an untimed warmup. The warmup gets one second after
+readiness for pending cache writes to finish. Samples alternate implementation
+order. Operating-system file caches are not cleared.
+
+The server uses a minimal environment, memory caching, an empty dotenv file, and
+available loopback ports. Remote configuration and trace sampling are disabled.
+The benchmark sends no feed requests and terminates each process group before
+starting the next sample. It requires POSIX process-group support. Run it without
+concurrent builds or tests. See the
+[recorded RSSHub results](../../notes/tsx/oxc-evaluation.md#rsshub-development-startup)
+for the measured compiler routes and limitations.
+
 ## Oxc feasibility measurements
 
 The standalone Oxc comparison uses an external candidate install. It does not add a transformer dependency to tsx:

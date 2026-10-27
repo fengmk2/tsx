@@ -130,6 +130,70 @@ commands without `--cold` for warm caches. Clear unrelated Node and tsx option
 overrides before measuring. Keep raw samples outside version control, and remove
 the disposable control and cache directories when finished.
 
+### RSSHub development startup
+
+[RSSHub at `238226e`](https://github.com/DIYgod/RSSHub/tree/238226edda3dfcc948d6531971efaaf890865d0d)
+is a real consumer: its [development and route-generation scripts](https://github.com/DIYgod/RSSHub/blob/238226edda3dfcc948d6531971efaaf890865d0d/package.json)
+use `tsx`. Development startup imports 5,522 route TypeScript/TSX files, plus
+shared application modules and dependencies. The project declares `tsx@4.22.3`;
+this comparison explicitly substitutes the two checkout CLIs below.
+
+The baseline is the esbuild-only revision `8e4b900`; the draft runtime is
+`a201186`. Both use esbuild `0.28.0` and the same RSSHub checkout and locked
+dependencies. Measurements ran on 2026-10-27 with Node `24.22.1`, macOS arm64,
+and an Apple M4 Max.
+
+Each value is the median of seven fresh-process runs after an untimed warmup.
+The runner alternates implementation order between rounds. It measures
+`node /path/to/tsx/dist/cli.mjs lib/index.ts` through the first HTTP `200`
+response containing `ok` from `/healthz`. This includes CLI startup, source
+loading, application initialization, and the first health request. The watch
+process and debugger are omitted from both commands.
+
+| Cache | Native: before → after | Native change | WASM: before → after | WASM change |
+| --- | ---: | ---: | ---: | ---: |
+| Cold | 7,248.22 → 5,207.30 ms | −28.16% (1.39× faster) | 7,829.35 → 5,905.41 ms | −24.57% (1.33× faster) |
+| Warm | 3,744.59 → 3,766.01 ms | +0.57% | 3,825.46 → 3,810.20 ms | −0.40% |
+
+Cold samples clear an isolated tsx transform cache before each launch.
+Operating-system file caches remain intact. Warm samples retain the cache from
+their warmup, which gets one second after readiness for pending writes to finish.
+The WASM comparison applies `NODE_OPTIONS=--no-addons` to both implementations.
+No builds, tests, or diagnostic probes ran concurrently with the timed samples.
+
+Cold native samples ranged from 6.98–7.47 seconds before and 5.06–6.16 seconds
+after. Cold WASM samples ranged from 7.68–12.98 seconds before and 5.68–6.17
+seconds after. The reported medians retain all samples, including the slow
+12.98-second baseline sample.
+
+Separate untimed diagnostics observed the same 5,670 unique transformed file
+paths in all three variants. Native and WASM Oxc each handled 4,998 files
+(88.1%); the esbuild JS API handled the other 672 files (11.9%). Of those
+fallbacks, 670 followed an Oxc source rejection and two JSON files bypassed Oxc.
+Oxc reported no transform exceptions. Warm-cache diagnostics recorded
+zero calls to either compiler. Diagnostic instrumentation was absent from the
+timed runs.
+
+The server uses memory caching, an empty dotenv file, local application and
+metrics ports, and disabled remote configuration and trace sampling. Only
+`/healthz` is requested; no feed is fetched. The workload measures development
+source startup, rather than the bundled production server or feed throughput.
+Successful readiness does not establish compatibility for every route handler.
+
+The [RSSHub benchmark instructions](../../scripts/benchmark/README.md#rsshub-startup)
+describe dependency setup. With both tsx checkouts built, repeat the measurement:
+
+```sh
+node scripts/benchmark/rsshub.js \
+  --project-dir /path/to/RSSHub \
+  --baseline-dir /path/to/esbuild-only-tsx \
+  --runs 7
+```
+
+Repeat with `--no-addons` for WASM. The script emits metadata and raw samples as
+JSON, checks the selected Oxc format before measurement, and stops each server
+before the next launch. Keep raw JSON outside version control.
+
 ## Initial upstream assessment
 
 The current Oxc packages can accelerate some TypeScript workloads, but they cannot replace tsx's backend while preserving its full behavior. Do not switch the production backend on the strength of ESM benchmarks. This assessment covers npm `@oxc-node/core@1.0.1`, `oxc-transform@0.155.0`, and the tsx checkout at `4473971` with `esbuild@0.28.0`, reviewed on 2026-10-25. The [oxc-node source revision and APIs](../oxc-node/README.md) are recorded separately.
