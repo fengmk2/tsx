@@ -3,19 +3,23 @@ use std::path::Path;
 use napi_derive::napi;
 use oxc::{
     allocator::Allocator,
-    ast::AstKind,
+    ast::{
+        AstKind,
+        ast::{Expression, JSXAttributeItem},
+    },
     ast_visit::Visit,
     codegen::{Codegen, CodegenOptions},
     parser::Parser,
     semantic::SemanticBuilder,
     span::SourceType,
-    transformer::{TransformOptions, Transformer},
+    syntax::{identifier::is_identifier_name, keyword::is_reserved_keyword},
+    transformer::{JsxOptions, JsxRuntime, TransformOptions, Transformer},
 };
 use serde::Deserialize;
 
 // Change this identity whenever options, eligibility, or output semantics change.
 // The host includes it in transform cache keys without eagerly loading the addon.
-const BACKEND_VERSION: &str = "oxc-0.155.0:tsx-native-3";
+const BACKEND_VERSION: &str = "oxc-0.155.0:tsx-native-4";
 
 #[napi]
 pub fn backend_version() -> &'static str {
@@ -31,14 +35,21 @@ struct Options {
     source_map: bool,
     only_remove_type_imports: bool,
     use_define_for_class_fields: bool,
-    // The host supplies the complete mapping, but JSX currently takes the
-    // compatibility backend. Keeping this field explicit rejects misspelled options.
-    #[serde(default)]
-    jsx: Option<serde_json::Value>,
+    jsx: JsxSettings,
     #[serde(default)]
     banner: Option<String>,
     #[serde(default)]
     footer: Option<String>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct JsxSettings {
+    runtime: JsxRuntime,
+    development: bool,
+    import_source: String,
+    pragma: String,
+    pragma_frag: String,
 }
 
 #[napi(object)]
@@ -58,6 +69,7 @@ struct Eligibility {
     function_depth: u32,
     typescript: bool,
     only_remove_type_imports: bool,
+    automatic_jsx: bool,
 }
 
 impl<'a> Visit<'a> for Eligibility {
@@ -85,6 +97,28 @@ impl<'a> Visit<'a> for Eligibility {
             {
                 self.supported = false;
             }
+            AstKind::JSXElement(_) | AstKind::JSXFragment(_)
+                if self.commonjs && self.automatic_jsx =>
+            {
+                // Oxc calls the CommonJS runtime as a method, whereas esbuild
+                // calls it without a receiver. Preserve the runtime's `this`.
+                self.supported = false;
+            }
+            AstKind::JSXSpreadAttribute(spread)
+                if matches!(spread.argument.get_inner_expression(), Expression::ObjectExpression(_)) =>
+            {
+                // Oxc flattens object-literal spreads. That can change getter
+                // evaluation and the home object used by methods with `super`.
+                self.supported = false;
+            }
+            AstKind::JSXOpeningElement(element)
+                if !self.automatic_jsx
+                    && matches!(element.attributes.as_slice(), [JSXAttributeItem::SpreadAttribute(_)]) =>
+            {
+                // Oxc passes a lone spread object directly to a classic factory.
+                // esbuild copies its enumerable properties into a new object.
+                self.supported = false;
+            }
             // Oxc's namespace mutation and enum lowering do not yet have proven
             // tsx parity. Import-equals aliases can change import side effects,
             // and export assignments have different evaluation order.
@@ -95,10 +129,8 @@ impl<'a> Visit<'a> for Eligibility {
             | AstKind::TSImportEqualsDeclaration(_)
             | AstKind::TSExportAssignment(_)
             | AstKind::TSNamespaceExportDeclaration(_)
-            // Keep both decorator proposals and JSX on the existing backend.
+            // Keep both decorator proposals on the existing backend.
             | AstKind::Decorator(_)
-            | AstKind::JSXElement(_)
-            | AstKind::JSXFragment(_)
             | AstKind::AccessorProperty(_)
             // Import attributes/assertions have Node-version-specific lowering.
             | AstKind::WithClause(_) => self.supported = false,
@@ -152,6 +184,14 @@ impl<'a> Visit<'a> for Eligibility {
     }
 }
 
+fn supports_jsx_factory(factory: &str) -> bool {
+    let mut parts = factory.split('.');
+    parts
+        .next()
+        .is_some_and(|root| is_identifier_name(root) && !is_reserved_keyword(root))
+        && parts.all(is_identifier_name)
+}
+
 fn transform_source(filename: &str, source: &str, options: &Options) -> Option<TransformOutput> {
     // Module conversion stays on the compatibility backend. Sources already
     // written as CommonJS can use Oxc without changing their module semantics.
@@ -172,8 +212,38 @@ fn transform_source(filename: &str, source: &str, options: &Options) -> Option<T
     }
     .with_module(true)
     .with_commonjs(commonjs);
-    let _ = &options.jsx;
     let mut transform_options = TransformOptions::from_target(&options.target).ok()?;
+    let jsx = &options.jsx;
+    let classic = jsx.runtime.is_classic();
+    if classic && (!supports_jsx_factory(&jsx.pragma) || !supports_jsx_factory(&jsx.pragma_frag)) {
+        // Oxc silently substitutes its default for factory expressions such as
+        // `null`, which esbuild accepts as a fragment factory.
+        return None;
+    }
+    transform_options.jsx = JsxOptions {
+        runtime: jsx.runtime,
+        development: jsx.development,
+        // esbuild accepts XML namespaced tags used by RSS and Atom templates.
+        throw_if_namespace: false,
+        // esbuild does not inject displayName into React.createClass calls.
+        display_name_plugin: false,
+        import_source: (!classic).then(|| jsx.import_source.clone()),
+        pragma: classic.then(|| jsx.pragma.clone()),
+        pragma_frag: classic.then(|| jsx.pragma_frag.clone()),
+        ..Default::default()
+    };
+    // Preserve imports used only by a classic JSX factory or fragment. Automatic
+    // JSX does not use these bindings and must not retain their side effects.
+    transform_options.typescript.jsx_pragma = if classic {
+        jsx.pragma.clone().into()
+    } else {
+        "".into()
+    };
+    transform_options.typescript.jsx_pragma_frag = if classic {
+        jsx.pragma_frag.clone().into()
+    } else {
+        "".into()
+    };
     transform_options.typescript.only_remove_type_imports = options.only_remove_type_imports;
     transform_options
         .typescript
@@ -190,6 +260,8 @@ fn transform_source(filename: &str, source: &str, options: &Options) -> Option<T
     if program.comments.iter().any(|comment| {
         let text = comment.content_span().source_text(source);
         text.contains("sourceMappingURL") || text.contains("sourceURL")
+            // The compilers recognize JSX pragma placement differently.
+            || text.contains("@jsx")
     }) {
         return None;
     }
@@ -205,6 +277,7 @@ fn transform_source(filename: &str, source: &str, options: &Options) -> Option<T
         function_depth: 0,
         typescript: source_type.is_typescript(),
         only_remove_type_imports: options.only_remove_type_imports,
+        automatic_jsx: options.jsx.runtime.is_automatic(),
     };
     eligibility.visit_program(&program);
     if !eligibility.supported {
@@ -271,10 +344,25 @@ mod tests {
             source_map: true,
             only_remove_type_imports: false,
             use_define_for_class_fields: true,
-            jsx: None,
+            jsx: JsxSettings {
+                runtime: JsxRuntime::Classic,
+                development: false,
+                import_source: "react".into(),
+                pragma: "React.createElement".into(),
+                pragma_frag: "React.Fragment".into(),
+            },
             banner: None,
             footer: None,
         }
+    }
+
+    #[test]
+    fn unsupported_jsx_factories_do_not_silently_use_react_defaults() {
+        let mut options = options();
+        options.lang = "tsx".into();
+        options.jsx.pragma = "Array".into();
+        options.jsx.pragma_frag = "null".into();
+        assert!(transform_source("file.tsx", "console.log(<>hi</>);", &options).is_none());
     }
 
     #[test]

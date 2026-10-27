@@ -13,10 +13,20 @@ also select this fallback. The adapter does not rewrite generated helpers or par
 generated output to repair compiler differences.
 
 The current native paths support ESM and files that already use CommonJS syntax.
-ESM-to-CommonJS conversion, decorators, namespaces, enums, JSX, import attributes,
+Classic and automatic JSX use the configured factories, fragments, import source,
+and development mode. XML namespaced tags are supported. The TypeScript pass
+retains imported classic factories and removes unused bindings in automatic mode.
+
+ESM-to-CommonJS conversion, decorators, namespaces, enums, import attributes,
 import-equals declarations, export assignments, parameter properties, and selected
 class-field transforms still use esbuild. Source-map directives also select
 esbuild so that existing input maps continue to compose correctly.
+
+JSX compatibility fallback covers automatic JSX in CommonJS, a lone spread
+attribute in classic JSX, object-literal spread attributes, and JSX pragma
+comments. These cases differ in runtime receiver binding, object identity,
+property evaluation, or directive handling. Unsupported JSX settings also use
+esbuild. JSON continues to use the existing path.
 
 The CommonJS path does not introduce strict mode. Code generation emits tsx's
 filename banner before the source and accounts for it in generated map positions.

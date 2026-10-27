@@ -181,6 +181,338 @@ export const oxcTransformSpec = () => describe('Oxc transform', () => {
 		});
 	});
 
+	describe('JSX', () => {
+		test('uses classic JSX by default without adding React display names', async () => {
+			const source = `
+				const React = {
+					createElement: (type, props, ...children) => ({ type, props, children }),
+					Fragment: 'fragment',
+					createClass: properties => properties,
+				};
+				export const Example = React.createClass({});
+				export const value = <><article title="hello">one <b /> two</article></>;
+			`;
+			const jsxOptions = {
+				...options,
+				sourcefile: '/classic.tsx',
+			};
+			const result = attemptOxcTransform(source, jsxOptions);
+			assert(result, 'Classic JSX must use Oxc');
+			const actual = await importOutput(result.code);
+			const reference = await importOutput(esbuildTransformSync(source, jsxOptions).code);
+			expect(actual.value).toStrictEqual(reference.value);
+			expect(actual.value.type).toBe('fragment');
+			expect(actual.Example).toStrictEqual({});
+		});
+
+		test('retains imported JSX factories and fragments from tsconfig and direct options', async () => {
+			await using fixture = await createFixture({
+				'factory.mjs': `
+					export const h = (type, props, ...children) => ({ type, props, children });
+					export const Fragment = 'custom-fragment';
+				`,
+			});
+			const source = `
+				import { h, Fragment } from './factory.mjs';
+				export const value = <><section id="custom">hello</section></>;
+			`;
+			for (const [index, configuration] of ([
+				{
+					jsx: 'automatic',
+					jsxDev: true,
+					jsxFactory: 'wrongFactory',
+					jsxFragment: 'WrongFragment',
+					tsconfigRaw: {
+						compilerOptions: {
+							jsx: 'react',
+							jsxFactory: 'h',
+							jsxFragmentFactory: 'Fragment',
+						},
+					},
+				},
+				{
+					jsx: 'transform',
+					jsxDev: true,
+					jsxFactory: 'h',
+					jsxFragment: 'Fragment',
+				},
+			] satisfies TransformOptions[]).entries()) {
+				const jsxOptions: TransformOptions = {
+					...options,
+					sourcefile: fixture.getPath('custom.tsx'),
+					...configuration,
+				};
+				const result = attemptOxcTransform(source, jsxOptions);
+				assert(result, 'Custom classic JSX must use Oxc');
+				await fixture.writeFile(`native-${index}.mjs`, result.code);
+				await fixture.writeFile(`esbuild-${index}.mjs`, esbuildTransformSync(source, jsxOptions).code);
+				const actual = await import(pathToFileURL(fixture.getPath(`native-${index}.mjs`)).href);
+				const reference = await import(pathToFileURL(fixture.getPath(`esbuild-${index}.mjs`)).href);
+				expect(actual.value).toStrictEqual(reference.value);
+				expect(actual.value.type).toBe('custom-fragment');
+				expect(actual.value.children[0].props.id).toBe('custom');
+			}
+		});
+
+		for (const development of [false, true]) {
+			test(`uses the custom automatic JSX ${development ? 'development' : 'production'} runtime`, async () => {
+				await using fixture = await createFixture({
+					'unused.mjs': 'throw new Error("Unused React import must be removed");',
+					'node_modules/custom-jsx': {
+						'package.json': JSON.stringify({
+							type: 'module',
+							exports: {
+								'./jsx-runtime': './runtime.js',
+								'./jsx-dev-runtime': './development.js',
+							},
+						}),
+						'runtime.js': `
+							export const Fragment = 'fragment';
+							export const jsx = (type, props, key) => ({ type, props, key });
+							export const jsxs = jsx;
+						`,
+						'development.js': `
+							export const Fragment = 'fragment';
+							export const jsxDEV = (type, props, key, staticChildren, source, self) => ({
+								type, props, key, staticChildren, source, self,
+							});
+						`,
+					},
+				});
+				const source = [
+					'import React from "./unused.mjs";',
+					'export const value = <>',
+					'  <content:encoded key="body" data-count={2}>Hello &amp; world</content:encoded>',
+					'  <atom:link rel="self" />',
+					'</>;',
+				].join('\n');
+				const jsxOptions: TransformOptions = {
+					...options,
+					sourcefile: fixture.getPath('automatic.tsx'),
+					jsx: 'transform',
+					jsxDev: false,
+					jsxImportSource: 'wrong-runtime',
+					tsconfigRaw: {
+						compilerOptions: {
+							jsx: development ? 'react-jsxdev' : 'react-jsx',
+							jsxImportSource: 'custom-jsx',
+						},
+					},
+				};
+				const result = attemptOxcTransform(source, jsxOptions);
+				assert(result, 'Automatic JSX and XML namespaces must use Oxc');
+				await fixture.writeFile('native.mjs', result.code);
+				await fixture.writeFile('esbuild.mjs', esbuildTransformSync(source, jsxOptions).code);
+				const actual = await import(pathToFileURL(fixture.getPath('native.mjs')).href);
+				const reference = await import(pathToFileURL(fixture.getPath('esbuild.mjs')).href);
+				expect(actual.value).toStrictEqual(reference.value);
+				expect(actual.value.props.children[0]).toMatchObject({
+					type: 'content:encoded',
+					key: 'body',
+					props: {
+						'data-count': 2,
+						children: 'Hello & world',
+					},
+				});
+				if (development) {
+					expect(actual.value.props.children[0].source).toStrictEqual({
+						fileName: jsxOptions.sourcefile,
+						lineNumber: 3,
+						columnNumber: 3,
+					});
+				}
+			});
+		}
+
+		test('transforms classic JSX in CommonJS scripts', () => {
+			const source = `
+				const React = { createElement: (type, props, ...children) => ({ type, props, children }) };
+				module.exports = <article id="commonjs"><b>hello</b></article>;
+			`;
+			const jsxOptions: TransformOptions = {
+				...options,
+				sourcefile: '/classic-commonjs.tsx',
+				format: 'cjs',
+				banner: '__filename="/classic-commonjs.tsx";(()=>{',
+				footer: '})()',
+			};
+			const result = attemptOxcTransform(source, jsxOptions);
+			assert(result, 'Classic CommonJS JSX must use Oxc');
+			const evaluate = (code: string) => {
+				const module = { exports: {} };
+				runInNewContext(code, { module });
+				return structuredClone(module.exports);
+			};
+			const reference = esbuildTransformSync(source, jsxOptions);
+			expect(evaluate(result.code)).toStrictEqual(evaluate(reference.code));
+		});
+
+		test('preserves unbound automatic JSX runtime calls in CommonJS through fallback', () => {
+			const source = 'module.exports = <article id="commonjs"><b>hello</b></article>;';
+			const jsxOptions: TransformOptions = {
+				...options,
+				sourcefile: '/automatic-commonjs.tsx',
+				format: 'cjs',
+				jsx: 'automatic',
+				jsxImportSource: 'custom-jsx',
+			};
+			expect(attemptOxcTransform(source, jsxOptions)).toBeUndefined();
+			const result = transformSync(source, jsxOptions.sourcefile!, {
+				jsx: 'automatic',
+				jsxImportSource: 'custom-jsx',
+			});
+			const evaluate = (code: string) => {
+				const module = { exports: {} };
+				const requested: string[] = [];
+				function jsx(this: unknown, type: string, props: unknown, key: string) {
+					return {
+						type,
+						props,
+						key,
+						unbound: this === undefined,
+					};
+				}
+				runInNewContext(code, {
+					module,
+					require: (specifier: string) => {
+						requested.push(specifier);
+						return {
+							jsx,
+							jsxs: jsx,
+						};
+					},
+				});
+				expect(requested).toStrictEqual(['custom-jsx/jsx-runtime']);
+				return structuredClone(module.exports);
+			};
+			const actual = evaluate(result.code);
+			expect(actual).toStrictEqual(evaluate(esbuildTransformSync(source, jsxOptions).code));
+			expect(actual).toMatchObject({
+				unbound: true,
+				props: { children: { unbound: true } },
+			});
+		});
+
+		test('copies a sole classic JSX spread through fallback', async () => {
+			const source = `
+				const original = { value: 42 };
+				const h = (type, props) => {
+					props.value += 1;
+					return { same: props === original, value: props.value };
+				};
+				export const value = <node {...original} />;
+				export const originalValue = original.value;
+			`;
+			const jsxOptions: TransformOptions = {
+				...options,
+				sourcefile: '/single-spread.tsx',
+				jsxFactory: 'h',
+			};
+			expect(attemptOxcTransform(source, jsxOptions)).toBeUndefined();
+			const result = transformEsmSync(source, jsxOptions.sourcefile!, { jsxFactory: 'h' });
+			const actual = await importOutput(result.code);
+			const reference = await importOutput(esbuildTransformSync(source, jsxOptions).code);
+			expect(actual.value).toStrictEqual({
+				same: false,
+				value: 43,
+			});
+			expect(actual.originalValue).toBe(42);
+			expect(actual.value).toStrictEqual(reference.value);
+			expect(actual.originalValue).toBe(reference.originalValue);
+		});
+
+		test('preserves JSX object-spread getter evaluation order through fallback', async () => {
+			const source = `
+				export const order = [];
+				const h = (type, props) => ({ ...props });
+				export const value = <node {...{
+					get first() { order.push('get'); return 1; },
+				}} last={(order.push('after'), 2)} />;
+			`;
+			const jsxOptions: TransformOptions = {
+				...options,
+				sourcefile: '/spread.tsx',
+				jsxFactory: 'h',
+			};
+			expect(attemptOxcTransform(source, jsxOptions)).toBeUndefined();
+			const result = transformEsmSync(source, jsxOptions.sourcefile!, { jsxFactory: 'h' });
+			const actual = await importOutput(result.code);
+			const reference = await importOutput(esbuildTransformSync(source, jsxOptions).code);
+			expect(actual.order).toStrictEqual(['get', 'after']);
+			expect(actual.order).toStrictEqual(reference.order);
+			expect(actual.value).toStrictEqual(reference.value);
+		});
+
+		test('preserves JSX pragmas after statements through fallback', async () => {
+			const source = `
+				const first = 42;
+				/** @jsx h */
+				const h = (type, props) => ({ type, props });
+				export const value = <div answer={first} />;
+			`;
+			const jsxOptions = {
+				...options,
+				sourcefile: '/pragma.tsx',
+			};
+			expect(attemptOxcTransform(source, jsxOptions)).toBeUndefined();
+			const result = transformEsmSync(source, jsxOptions.sourcefile);
+			const actual = await importOutput(result.code);
+			const reference = await importOutput(esbuildTransformSync(source, jsxOptions).code);
+			expect(actual.value).toStrictEqual(reference.value);
+			expect(actual.value).toStrictEqual({
+				type: 'div',
+				props: { answer: 42 },
+			});
+		});
+
+		test('maps an error inside JSX after Unicode to its original source position', async () => {
+			await using fixture = await createFixture();
+			const sourcefile = fixture.getPath('original.tsx');
+			const errorLine = 'const icon = "😀"; export const value = <div>{(() => { throw new Error("jsx-map"); })()}</div>;';
+			const source = `const React = { createElement() {} };\n${errorLine}`;
+			const result = attemptOxcTransform(source, {
+				...options,
+				sourcefile,
+			});
+			assert(result, 'JSX source maps must come from Oxc');
+			await fixture.writeFile('output.mjs', inlineSourceMap(result));
+			const { exitCode, stderr } = await execaNode(fixture.getPath('output.mjs'), {
+				nodeOptions: ['--enable-source-maps'],
+				reject: false,
+			});
+			expect(exitCode).toBe(1);
+			expect(stderr).toContain(`${sourcefile}:2:${errorLine.indexOf('new Error') + 1}`);
+		});
+
+		test('retains JSX fallback for preservation, module conversion, and unsupported syntax', async () => {
+			const source = `
+				const React = { createElement: (type, props, ...children) => ({ type, props, children }) };
+				enum State { Ready = 42 }
+				export const value = <div>{State.Ready}</div>;
+			`;
+			const jsxOptions = {
+				...options,
+				sourcefile: '/fallback.tsx',
+			};
+			expect(attemptOxcTransform(source, jsxOptions)).toBeUndefined();
+			const result = transformEsmSync(source, jsxOptions.sourcefile);
+			const actual = await importOutput(result.code);
+			const reference = await importOutput(esbuildTransformSync(source, jsxOptions).code);
+			expect(actual.value).toStrictEqual(reference.value);
+			for (const configuration of [
+				{ jsx: 'preserve' },
+				{ tsconfigRaw: { compilerOptions: { jsx: 'preserve' } } },
+				{ tsconfigRaw: { compilerOptions: { jsx: 'react-native' } } },
+				{ format: 'cjs' },
+			] satisfies TransformOptions[]) {
+				expect(attemptOxcTransform('export const value = <div />;', {
+					...jsxOptions,
+					...configuration,
+				})).toBeUndefined();
+			}
+		});
+	});
+
 	test('retains compatibility fallback when both compiler artifacts are missing', async () => {
 		await using fixture = await createFixture({
 			'package.json': JSON.stringify({
@@ -279,6 +611,14 @@ export const oxcTransformSpec = () => describe('Oxc transform', () => {
 			{ minifyWhitespace: false },
 			{ jsx: 'preserve' },
 			{ jsxFactory: 'invalid factory' },
+			{
+				jsxFactory: 'invalid factory',
+				tsconfigRaw: { compilerOptions: { jsxFactory: 'h' } },
+			},
+			{
+				jsxFragment: 'invalid fragment',
+				tsconfigRaw: { compilerOptions: { jsxFragmentFactory: 'Fragment' } },
+			},
 			{ tsconfigRaw: '{"compilerOptions":{}}' },
 			{ tsconfigRaw: { compilerOptions: { importsNotUsedAsValues: 'preserve' } } },
 		] satisfies TransformOptions[]) {
@@ -297,6 +637,8 @@ export const oxcTransformSpec = () => describe('Oxc transform', () => {
 			{ preserveValueImports: 'false' },
 			{ useDefineForClassFields: 'false' },
 			{ alwaysStrict: 'false' },
+			{ jsx: 'automatic' },
+			{ jsx: 'transform' },
 		]) {
 			expect(attemptOxcTransform('export const value: number = 42;', {
 				...options,

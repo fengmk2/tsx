@@ -8,6 +8,13 @@ all three transform entry points. It retains tsx's loaders, resolver, public API
 and cache. A native AST gate selects eligible ESM and already-CommonJS sources;
 other inputs use the original esbuild transform on the unchanged source.
 
+JSX uses Oxc for classic and automatic runtimes, custom factories and fragments,
+custom runtime imports, development metadata, and XML namespaced tags. CommonJS
+automatic JSX, classic single-spread attributes, object-literal spreads, and JSX
+pragma comments retain esbuild because their behavior differs between compilers.
+The backend cache identity changes when these eligibility rules change. JSON
+handling remains unchanged.
+
 The adapter uses the same Oxc compiler as oxc-node. It supplies the per-call
 configuration and pre-transform AST capability check that the published packages
 lack. It does not install oxc-node's hooks or introduce a second source parser.

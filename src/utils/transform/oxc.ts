@@ -6,7 +6,7 @@ import type { Transformed } from './apply-transformers.js';
 
 // Bump this when either the native protocol or its compatibility policy changes.
 // Reading the cache identity must not initialize the native binding.
-export const oxcBackendVersion = 'oxc-0.155.0:tsx-native-3';
+export const oxcBackendVersion = 'oxc-0.155.0:tsx-native-4';
 
 type NativeOptions = {
 	target: string;
@@ -80,6 +80,11 @@ const supportedOptions = new Set([
 	'platform',
 	'banner',
 	'footer',
+	'jsx',
+	'jsxFactory',
+	'jsxFragment',
+	'jsxImportSource',
+	'jsxDev',
 ]);
 
 const languageByExtension: Record<string, NativeOptions['lang']> = {
@@ -144,23 +149,54 @@ const getUseDefineForClassFields = (compilerOptions: NonNullable<TsconfigRaw['co
 	);
 };
 
+const jsxFactoryPattern = /^[A-Z_$][\w$]*(?:\.[A-Z_$][\w$]*)*$/i;
+
 const getJsxOptions = (
 	options: TransformOptions,
 	compilerOptions: NonNullable<TsconfigRaw['compilerOptions']>,
 ): NativeOptions['jsx'] | undefined => {
-	const jsxMode = options.jsx ?? compilerOptions.jsx;
-	if (jsxMode === 'preserve' || jsxMode === 'react-native') {
+	const configuredMode = compilerOptions.jsx;
+	if (
+		(configuredMode !== undefined && typeof configuredMode !== 'string')
+		|| (options.jsx !== undefined && options.jsx !== 'transform' && options.jsx !== 'automatic')
+		|| (options.jsxDev !== undefined && typeof options.jsxDev !== 'boolean')
+		|| [
+			options.jsxFactory,
+			options.jsxFragment,
+			options.jsxImportSource,
+			compilerOptions.jsxFactory,
+			compilerOptions.jsxFragmentFactory,
+			compilerOptions.jsxImportSource,
+		].some(value => value !== undefined && typeof value !== 'string')
+		|| [options.jsxFactory, options.jsxFragment]
+			.some(value => typeof value === 'string' && !jsxFactoryPattern.test(value))
+	) {
+		return;
+	}
+	const configuredJsx = configuredMode?.toLowerCase();
+	if (configuredJsx !== undefined && !['react', 'react-jsx', 'react-jsxdev'].includes(configuredJsx)) {
+		return;
+	}
+	// esbuild applies recognized tsconfig JSX settings after its API options.
+	const jsxMode = configuredJsx ?? options.jsx;
+	const pragma = compilerOptions.jsxFactory ?? options.jsxFactory ?? 'React.createElement';
+	const pragmaFrag = compilerOptions.jsxFragmentFactory ?? options.jsxFragment ?? 'React.Fragment';
+	const importSource = compilerOptions.jsxImportSource ?? options.jsxImportSource ?? 'react';
+	if (
+		typeof pragma !== 'string' || !jsxFactoryPattern.test(pragma)
+		|| typeof pragmaFrag !== 'string' || !jsxFactoryPattern.test(pragmaFrag)
+		|| typeof importSource !== 'string' || !importSource
+	) {
 		return;
 	}
 
+	const automatic = jsxMode === 'automatic' || jsxMode === 'react-jsx' || jsxMode === 'react-jsxdev';
 	return {
-		runtime: jsxMode === 'automatic' || jsxMode === 'react-jsx' || jsxMode === 'react-jsxdev'
-			? 'automatic'
-			: 'classic',
-		pragma: options.jsxFactory ?? compilerOptions.jsxFactory ?? 'React.createElement',
-		pragmaFrag: options.jsxFragment ?? compilerOptions.jsxFragmentFactory ?? 'React.Fragment',
-		importSource: options.jsxImportSource ?? compilerOptions.jsxImportSource ?? 'react',
-		development: options.jsxDev ?? (jsxMode === 'react-jsxdev'),
+		runtime: automatic ? 'automatic' : 'classic',
+		pragma,
+		pragmaFrag,
+		importSource,
+		development: automatic && (options.jsxDev === true || jsxMode === 'react-jsxdev'),
 	};
 };
 
