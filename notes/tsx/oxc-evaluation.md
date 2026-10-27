@@ -146,9 +146,9 @@ shared application modules and dependencies. The project declares `tsx@4.22.3`;
 this comparison explicitly substitutes the two checkout CLIs below.
 
 The baseline is the esbuild-only revision `8e4b900`; the draft runtime is
-`a201186`. Both use esbuild `0.28.0` and the same RSSHub checkout and locked
-dependencies. Measurements ran on 2026-10-27 with Node `24.22.1`, macOS arm64,
-and an Apple M4 Max.
+`e2fd741`, which includes JSX support. Both use esbuild `0.28.0` and the same
+RSSHub checkout and locked dependencies. Measurements ran on 2026-10-27 with
+Node `24.22.1`, macOS arm64, and an Apple M4 Max.
 
 Each value is the median of seven fresh-process runs after an untimed warmup.
 The runner alternates implementation order between rounds. It measures
@@ -159,8 +159,8 @@ process and debugger are omitted from both commands.
 
 | Cache | Native: before → after | Native change | WASM: before → after | WASM change |
 | --- | ---: | ---: | ---: | ---: |
-| Cold | 7,248.22 → 5,207.30 ms | −28.16% (1.39× faster) | 7,829.35 → 5,905.41 ms | −24.57% (1.33× faster) |
-| Warm | 3,744.59 → 3,766.01 ms | +0.57% | 3,825.46 → 3,810.20 ms | −0.40% |
+| Cold | 6,680.87 → 4,355.87 ms | −34.80% (1.53× faster) | 6,624.99 → 4,666.85 ms | −29.56% (1.42× faster) |
+| Warm | 3,505.05 → 3,478.90 ms | −0.75% | 3,505.09 → 3,491.76 ms | −0.38% |
 
 Cold samples clear an isolated tsx transform cache before each launch.
 Operating-system file caches remain intact. Warm samples retain the cache from
@@ -168,18 +168,21 @@ their warmup, which gets one second after readiness for pending writes to finish
 The WASM comparison applies `NODE_OPTIONS=--no-addons` to both implementations.
 No builds, tests, or diagnostic probes ran concurrently with the timed samples.
 
-Cold native samples ranged from 6.98–7.47 seconds before and 5.06–6.16 seconds
-after. Cold WASM samples ranged from 7.68–12.98 seconds before and 5.68–6.17
-seconds after. The reported medians retain all samples, including the slow
-12.98-second baseline sample.
+Cold native samples ranged from 6.64–6.76 seconds before and 4.29–4.54 seconds
+after. Cold WASM samples ranged from 6.59–6.73 seconds before and 4.62–4.71
+seconds after. The reported medians retain all samples, including one
+3.97-second warm WASM candidate sample; its other warm samples ranged from
+3.43–3.57 seconds.
 
 Separate untimed diagnostics observed the same 5,670 unique transformed file
-paths in all three variants. Native and WASM Oxc each handled 4,998 files
-(88.1%); the esbuild JS API handled the other 672 files (11.9%). Of those
-fallbacks, 670 followed an Oxc source rejection and two JSON files bypassed Oxc.
-Oxc reported no transform exceptions. Warm-cache diagnostics recorded
-zero calls to either compiler. Diagnostic instrumentation was absent from the
-timed runs.
+paths in all three variants. Native and WASM Oxc each handled 5,589 files
+(98.6%); the esbuild JS API handled the other 81 files (1.4%). JSX support moved
+591 files from esbuild to Oxc. The remaining fallbacks comprise 70 ESM dependency
+files requested as CommonJS, eight files with enums, one ambient module
+declaration, and two JSON files. The dependency files produce parser diagnostics;
+the enum and ambient module cases reach the AST compatibility gate. JSON bypasses
+Oxc. The adapter reported no transform exceptions. Diagnostic instrumentation
+was absent from the timed runs.
 
 The server uses memory caching, an empty dotenv file, local application and
 metrics ports, and disabled remote configuration and trace sampling. Only
@@ -200,6 +203,20 @@ node scripts/benchmark/rsshub.js \
 Repeat with `--no-addons` for WASM. The script emits metadata and raw samples as
 JSON, checks the selected Oxc format before measurement, and stops each server
 before the next launch. Keep raw JSON outside version control.
+
+### Main package size
+
+Clean package archives compare the esbuild-only revision `8e4b900` with `e2fd741`.
+The latter includes JSX support, bundled WASM, and seven native optional package
+references. Both archives use the package preparation steps before `npm pack`.
+
+| Main package | Before | After | Increase |
+| --- | ---: | ---: | ---: |
+| Compressed | 142,419 B | 969,950 B | 827,531 B |
+| Unpacked | 396,911 B | 2,961,705 B | 2,564,794 B |
+
+The main archive contains one WASM file and no native binaries. These sizes
+exclude dependencies and the separate native package selected for the platform.
 
 ## Initial upstream assessment
 
