@@ -275,6 +275,75 @@ node scripts/benchmark/typedoc.js \
 Repeat with `--no-addons` for WASM. The script emits metadata and raw samples as
 JSON. Keep raw JSON outside version control.
 
+### WPPConnect Server startup
+
+[WPPConnect Server at `974df5e`](https://github.com/wppconnect-team/wppconnect-server/blob/974df5ef5674a5bca65fd254f90c96538348235a/package.json)
+uses `tsx watch src/server.ts` for development. Version `2.10.68` declares
+`tsx@^4.23.15`; the locked install selects `4.23.15`. The benchmark runs the
+same server entry without the watch process. It measures CLI spawn through
+HTTP `200` at `/healthz`, with JSON `message: "OK"`.
+
+The baseline is `8e4b900`; the draft is `4f4746f`, with the same runtime
+implementation as `e2fd741`. Both use esbuild `0.28.0` and the same unchanged
+application checkout with locked dependencies. Measurements ran on 2026-10-27
+with the project's pinned Node `22.22.2`, macOS arm64, and an Apple M4 Max.
+
+Each launch starts a fresh process with an empty transform cache, token store,
+and browser profile directory. Each batch starts with one untimed warmup per
+implementation, then alternates implementation order. OS file caches remain
+intact. No builds, tests, or diagnostic probes ran concurrently. Normal desktop
+background activity remained present.
+
+The first 15-run batch showed substantial variation, so a second batch added
+30 runs per implementation. All 45 samples per implementation remain in the
+combined result; no samples were discarded. Values below are medians.
+
+| Cold-cache samples per implementation | Before | After | Difference |
+| --- | ---: | ---: | ---: |
+| First batch: 15 | 547.47 ms | 525.76 ms | −21.72 ms (−3.97%) |
+| Second batch: 30 | 527.11 ms | 529.50 ms | +2.39 ms (+0.45%) |
+| Both batches: 45 | 528.29 ms | 528.52 ms | +0.22 ms (+0.04%) |
+
+Across both batches, samples ranged from 497.40–892.58 ms before and
+501.15–854.56 ms after. The median difference between implementations within
+each round was +1.82 ms. The health probe polls every 10 ms. These measurements
+show no consistent startup change and do not establish a sub-millisecond cost.
+
+Separate untimed diagnostics observed the same 45 unique transformed files in
+both versions. All 45 use esbuild. Their CommonJS output and `strict: true`
+configuration enable `alwaysStrict`, which the draft delegates to esbuild
+before loading Oxc. No Oxc binding loads in the server process. This workload
+measures fallback selected from compiler options, without Oxc parsing or
+initialization. It does not measure the cost of rejecting source syntax.
+
+Both versions fail before readiness with `--no-addons`: the application's
+`sharp` dependency requires a native addon and reports `ERR_DLOPEN_DISABLED`.
+There is no WASM timing for this workload. This failure occurs in the
+application dependency, independently of the tsx transform backend.
+
+The server uses its original source and compiler configuration. A disposable
+working directory keeps tokens and browser profiles empty. Diagnostics observed
+one loopback request from the server to itself, with no external connections.
+No WhatsApp session or browser starts. The metric includes application
+initialization and the first health request; it excludes session startup,
+the manager frontend, and request throughput. Diagnostic instrumentation is
+absent from timed runs.
+
+The [WPPConnect benchmark instructions](../../scripts/benchmark/README.md#wppconnect-server-startup)
+describe dependency setup. With both tsx checkouts built, repeat each batch with
+Node `22.22.2`:
+
+```sh
+node scripts/benchmark/wppconnect.js \
+  --project-dir /path/to/wppconnect-server \
+  --baseline-dir /path/to/esbuild-only-tsx \
+  --runs 15
+```
+
+Repeat with `--runs 30` for the second batch. Combine the sample arrays from
+both JSON outputs to calculate the 45-run medians. Keep raw JSON outside
+version control.
+
 ### Main package size
 
 Clean package archives compare the esbuild-only revision `8e4b900` with `e2fd741`.

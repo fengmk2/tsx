@@ -187,6 +187,51 @@ concurrent builds, tests, or diagnostic probes. See the
 [recorded TypeDoc results](../../notes/tsx/oxc-evaluation.md#typedoc-source-cli-startup)
 for the compiler routes and measurement limits.
 
+## WPPConnect Server startup
+
+[WPPConnect Server](https://github.com/wppconnect-team/wppconnect-server) uses
+`tsx watch src/server.ts` for development. This benchmark starts that server
+without the watch process and waits for HTTP `200` at `/healthz` with JSON
+`message: "OK"`. It includes CLI startup, module loading, application
+initialization, and the first health request.
+
+Prepare revision `974df5ef5674a5bca65fd254f90c96538348235a`. Use its pinned Node
+`22.22.2` and Yarn `4.14.1` to install the locked dependencies:
+
+```sh
+PUPPETEER_SKIP_DOWNLOAD=true PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true HUSKY=0 \
+  corepack yarn install --immutable
+```
+
+Build both tsx checkouts as described above. From the current checkout, use the
+same Node executable for both implementations:
+
+```sh
+node scripts/benchmark/wppconnect.js \
+  --project-dir /path/to/wppconnect-server \
+  --baseline-dir /path/to/esbuild-only-tsx \
+  --runs 15
+```
+
+Each launch uses the original source and `tsconfig.json`, with a fresh temporary
+working directory, transform cache, token store, and browser profile directory.
+No application files need changes. Empty tokens prevent WhatsApp sessions and
+browser launches. The benchmark measures an idle server; it excludes session
+startup, the manager frontend, and request throughput.
+
+The runner performs one untimed warmup per implementation, alternates sample
+order, and stops each process group before the next launch. OS file caches
+remain intact. JSON goes to stdout and progress goes to stderr. Keep raw JSON
+outside version control. The recorded comparison retains two batches: the
+default 15 runs, followed by `--runs 30`.
+
+This workload requires native addons: both implementations fail in the
+application's `sharp` dependency with `--no-addons`. The runner therefore
+measures only native-enabled Node. It requires POSIX process-group support.
+Run it without concurrent builds, tests, or diagnostic probes. See the
+[recorded WPPConnect results](../../notes/tsx/oxc-evaluation.md#wppconnect-server-startup)
+for the fallback analysis and measurement limits.
+
 ## Oxc feasibility measurements
 
 The standalone Oxc comparison uses an external candidate install. It does not add a transformer dependency to tsx:
