@@ -55,10 +55,10 @@ For example, an application can select Hono's custom JSX runtime:
 
 ```json
 {
-  "compilerOptions": {
-    "jsx": "react-jsx",
-    "jsxImportSource": "hono/jsx"
-  }
+    "compilerOptions": {
+        "jsx": "react-jsx",
+        "jsxImportSource": "hono/jsx"
+    }
 }
 ```
 
