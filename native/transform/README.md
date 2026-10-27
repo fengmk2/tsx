@@ -32,6 +32,43 @@ The CommonJS path does not introduce strict mode. Code generation emits tsx's
 filename banner before the source and accounts for it in generated map positions.
 Files with a hashbang, ESM syntax, or top-level await use the compatibility path.
 
+## JSX configuration
+
+tsx resolves the application's `tsconfig.json` with its existing configuration
+rules and passes the JSX settings to the native or WASM adapter. The compiler
+does not perform a second configuration lookup.
+
+| Application setting | Oxc behavior |
+| --- | --- |
+| `jsx: "react"`, or no JSX mode | Classic calls; defaults to `React.createElement` and `React.Fragment` |
+| `jsx: "react-jsx"` | Automatic production runtime |
+| `jsx: "react-jsxdev"` | Automatic development runtime with source location metadata |
+| `jsxImportSource` | Package prefix for automatic runtime imports |
+| `jsxFactory` / `jsxFragmentFactory` | Classic factory and fragment names; imports used only by JSX remain available |
+
+For example, an application can select Hono's custom JSX runtime:
+
+```json
+{
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "jsxImportSource": "hono/jsx"
+  }
+}
+```
+
+Oxc emits imports from `hono/jsx/jsx-runtime`. With `react-jsxdev`, it uses
+`hono/jsx/jsx-dev-runtime`. The application supplies the runtime package; tsx
+does not bundle React or substitute its own runtime. Other custom packages can
+use the same mechanism if they expose the corresponding JSX runtime entry points.
+
+For classic JSX, set `jsx: "react"`, `jsxFactory: "h"`, and
+`jsxFragmentFactory: "Fragment"` to emit `h(...)` calls and use `Fragment`.
+These settings apply to both native and WASM compilation. The compatibility
+cases listed above still use esbuild with the original source and configuration.
+
+## Build and distribution
+
 `pnpm build` builds the JavaScript entries, the host native binary, and a WASM
 version of this crate. napi-rs generates the platform loader at
 `dist/native/index.cjs`. It tries the matching native binary, then the bundled

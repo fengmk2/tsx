@@ -163,6 +163,13 @@ const fixtureTree = {
 				sourceMap: true,
 				onlyRemoveTypeImports: false,
 				useDefineForClassFields: true,
+				jsx: {
+					runtime: 'classic',
+					development: false,
+					importSource: 'react',
+					pragma: 'React.createElement',
+					pragmaFrag: 'React.Fragment',
+				},
 			});
 			const transformed = binding.transformSync(filename, source, options);
 			assert(transformed, 'The selected compiler must accept eligible TypeScript');
