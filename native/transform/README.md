@@ -38,6 +38,11 @@ tsx resolves the application's `tsconfig.json` with its existing configuration
 rules and passes the JSX settings to the native or WASM adapter. The compiler
 does not perform a second configuration lookup.
 
+These settings apply to files included by the selected configuration. Settings
+from `extends` are preserved. `.tsx` files do not need `allowJs`. For `.jsx`
+files selected through `include`, enable `compilerOptions.allowJs` so the
+application's JSX settings apply.
+
 | Application setting | Oxc behavior |
 | --- | --- |
 | `jsx: "react"`, or no JSX mode | Classic calls; defaults to `React.createElement` and `React.Fragment` |
