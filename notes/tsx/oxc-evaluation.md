@@ -204,6 +204,77 @@ Repeat with `--no-addons` for WASM. The script emits metadata and raw samples as
 JSON, checks the selected Oxc format before measurement, and stops each server
 before the next launch. Keep raw JSON outside version control.
 
+### TypeDoc source CLI startup
+
+[TypeDoc at `6d8c856`](https://github.com/TypeStrong/typedoc/tree/6d8c856bbb46b089371952981f113c3e318818fd)
+declares `tsx@4.23.0` and uses it in its
+[source test task](https://github.com/TypeStrong/typedoc/blob/6d8c856bbb46b089371952981f113c3e318818fd/Herebyfile.mjs#L228).
+This comparison starts the source CLI with the same test configuration and
+`typedoc-ts` export condition. These select source modules and the custom
+`JSX.createElement` factory with `JSX.Fragment`. The CLI loads the application,
+converter, renderer, and default JSX theme before handling `--help`.
+
+The baseline is `8e4b900`; the draft is `964f8c7`, with the same JSX runtime
+implementation as `e2fd741`. Both use esbuild `0.28.0` and the same unchanged
+TypeDoc checkout with frozen dependencies. Measurements ran on 2026-10-27 with
+Node `24.22.1`, macOS arm64, and an Apple M4 Max.
+
+Each value is the median of 15 fresh-process runs after one untimed warmup per
+implementation. Runs alternate implementation order. Each launch clears an
+isolated tsx transform cache; OS file caches remain intact. The WASM comparison
+applies `NODE_OPTIONS=--no-addons` to both versions. No builds, tests, or
+diagnostic probes ran concurrently with the measurements.
+
+| Cold-cache path | Before | After | Change |
+| --- | ---: | ---: | ---: |
+| Native | 614.99 ms | 547.63 ms | −67.36 ms (−10.95%, 1.12× faster) |
+| WASM | 623.87 ms | 623.65 ms | −0.22 ms; effectively unchanged |
+
+Native samples ranged from 592.71–782.88 ms before and 530.80–580.53 ms after.
+WASM samples ranged from 601.74–843.90 ms before and 604.95–800.30 ms after.
+All samples remain in the results. The WASM median difference is much smaller
+than the observed variation and does not establish a speed improvement.
+
+Separate untimed diagnostics observed the same 179 unique transformed files in
+both versions. Native and WASM Oxc each handled 136 files (76.0%); 43 files
+(24.0%) used esbuild. Of 35 loaded TSX files, Oxc handled 31. The other four
+contain decorators, auto-accessors, or constructor parameter properties; their
+custom JSX settings are supported. There were no Oxc transform exceptions or
+outbound network connections during these diagnostic runs.
+
+The 43 fallback files contain the following syntax. Counts overlap because one
+file can contain several unsupported constructs.
+
+| Syntax in fallback files | Files |
+| --- | ---: |
+| Decorators | 21 |
+| Auto-accessors | 16 |
+| Constructor parameter properties | 12 |
+| Type-only re-exports | 8 |
+| Enums | 7 |
+| Namespaces | 3 |
+| Import attributes | 1 |
+
+The timed command measures source CLI startup, initialization, and help output.
+It does not measure document conversion, HTML rendering, or the bundled npm
+CLI. Every sample checks successful exit and identical help output. TypeDoc's
+existing compiler configuration remains intact; `--logLevel Error` suppresses
+variable debug timing output. Diagnostic instrumentation is absent from timed
+runs.
+
+The [TypeDoc benchmark instructions](../../scripts/benchmark/README.md#typedoc-source-cli-startup)
+describe setup. With both tsx checkouts built, repeat the comparison:
+
+```sh
+node scripts/benchmark/typedoc.js \
+  --project-dir /path/to/typedoc \
+  --baseline-dir /path/to/esbuild-only-tsx \
+  --runs 15
+```
+
+Repeat with `--no-addons` for WASM. The script emits metadata and raw samples as
+JSON. Keep raw JSON outside version control.
+
 ### Main package size
 
 Clean package archives compare the esbuild-only revision `8e4b900` with `e2fd741`.

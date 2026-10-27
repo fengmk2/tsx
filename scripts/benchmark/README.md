@@ -146,6 +146,47 @@ concurrent builds or tests. See the
 [recorded RSSHub results](../../notes/tsx/oxc-evaluation.md#rsshub-development-startup)
 for the measured compiler routes and limitations.
 
+## TypeDoc source CLI startup
+
+[TypeDoc](https://github.com/TypeStrong/typedoc) uses `tsx` for its source tests.
+This benchmark starts its source CLI with the same JSX configuration and
+`typedoc-ts` export condition. The CLI loads its application, converter,
+renderer, and default JSX theme before it handles `--help`.
+
+Prepare TypeDoc revision `6d8c856bbb46b089371952981f113c3e318818fd` and install
+its locked dependencies. The recorded run uses pnpm `12.15.0`:
+
+```sh
+PUPPETEER_SKIP_DOWNLOAD=1 pnpm install --frozen-lockfile --ignore-scripts
+```
+
+Build both tsx checkouts as described above. Then run from the current checkout:
+
+```sh
+node scripts/benchmark/typedoc.js \
+  --project-dir /path/to/typedoc \
+  --baseline-dir /path/to/esbuild-only-tsx \
+  --runs 15
+```
+
+Repeat with `--no-addons` for WASM. Each sample starts a fresh process and clears
+its isolated transform cache. After one untimed warmup per implementation, the
+runner alternates implementation order and records 15 samples each. OS file
+caches remain intact. The runner checks successful exit and identical help
+output; the metric includes CLI startup, module loading, initialization, and
+help output. Document conversion and rendering are outside the timed command.
+
+The runner uses `.config/tsconfig.mocha.json`, which defines TypeDoc's custom
+`JSX.createElement` factory and `JSX.Fragment`. It selects source exports with
+`--conditions=typedoc-ts` and suppresses variable debug timings with
+`--logLevel Error`. No TypeDoc source or configuration files need changes.
+
+JSON goes to stdout and progress goes to stderr. Keep raw JSON outside version
+control. The runner requires POSIX process-group support. Run it without
+concurrent builds, tests, or diagnostic probes. See the
+[recorded TypeDoc results](../../notes/tsx/oxc-evaluation.md#typedoc-source-cli-startup)
+for the compiler routes and measurement limits.
+
 ## Oxc feasibility measurements
 
 The standalone Oxc comparison uses an external candidate install. It does not add a transformer dependency to tsx:
