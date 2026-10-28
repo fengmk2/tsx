@@ -14,6 +14,11 @@ export const publish = async (_pluginConfig, context) => {
 	const {
 		cwd, env, nextRelease, logger,
 	} = context;
+	const commandOptions = {
+		cwd,
+		env,
+		stdio: 'inherit',
+	};
 	const { version } = nextRelease;
 	const readJson = async name => JSON.parse(await fs.readFile(path.join(cwd, name), 'utf8'));
 	const beforePrepare = await readJson('package.json');
@@ -23,16 +28,14 @@ export const publish = async (_pluginConfig, context) => {
 	// @semantic-release/npm already sets the root version during its prepare step.
 	// Package preparation verifies the artifacts and sets platform versions before
 	// clean-pkg-json removes prepack, so the following root publish does not rebuild.
-	await execaNode(path.join(cwd, 'scripts/prepare-package.js'), [], {
-		cwd,
-		env,
-		stdio: 'inherit',
-	});
+	await execaNode(path.join(cwd, 'scripts/prepare-package.js'), [], commandOptions);
 
 	const config = await readJson('native/transform/napi.json');
 	const rootPackage = await readJson('package.json');
 	const packageName = config.packageName ?? rootPackage.name;
-	const targets = config.targets.map(target => parseTriple(target)).filter(target => target.platform !== 'wasi' && target.platform !== 'wasm');
+	const targets = config.targets
+		.map(target => parseTriple(target))
+		.filter(target => target.platform !== 'wasi' && target.platform !== 'wasm');
 	assert(targets.length > 0, 'The release must include native targets');
 	const packages = [];
 
@@ -60,10 +63,6 @@ export const publish = async (_pluginConfig, context) => {
 	const tag = nextRelease.channel || 'latest';
 	for (const { name, directory } of packages) {
 		logger.log('Publishing %s@%s before the main package', name, version);
-		await execa('npm', ['publish', directory, '--access', 'public', '--tag', tag, '--ignore-scripts'], {
-			cwd,
-			env,
-			stdio: 'inherit',
-		});
+		await execa('npm', ['publish', directory, '--access', 'public', '--tag', tag, '--ignore-scripts'], commandOptions);
 	}
 };

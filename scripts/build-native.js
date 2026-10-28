@@ -19,9 +19,14 @@ const root = fileURLToPath(new URL('../', import.meta.url));
 const nativeDirectory = path.join(root, 'native/transform');
 const outputDirectory = path.join(root, 'dist/native');
 const wasmTarget = 'wasm32-wasip1-threads';
-const targets = values.target
-	? [values.target]
-	: (values['wasm-only'] ? [wasmTarget] : [undefined, wasmTarget]);
+let targets;
+if (values.target) {
+	targets = [values.target];
+} else if (values['wasm-only']) {
+	targets = [wasmTarget];
+} else {
+	targets = [undefined, wasmTarget];
+}
 
 // Cargo metadata and compilation must both select this crate's pinned toolchain.
 process.chdir(nativeDirectory);

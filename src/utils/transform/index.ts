@@ -37,6 +37,24 @@ const formatEsbuildError = (
 	throw error;
 };
 
+const transformWithCompilerSync = (
+	code: string,
+	options: TransformOptions,
+): Transformed => {
+	const nativeResult = attemptOxcTransform(code, options);
+	if (nativeResult) {
+		return nativeResult;
+	}
+	const patchResult = patchOptions(options);
+	let result;
+	try {
+		result = esbuildTransformSync(code, options);
+	} catch (error) {
+		throw formatEsbuildError(error as TransformFailure);
+	}
+	return patchResult(result);
+};
+
 const getImportMeta = (
 	filePath: string,
 	url: string,
@@ -138,20 +156,7 @@ export const transformSync = (
 			filePathOrUrl,
 			code,
 			[
-				(_filePath, _code) => {
-					const nativeResult = attemptOxcTransform(_code, esbuildOptions);
-					if (nativeResult) {
-						return nativeResult;
-					}
-					const patchResult = patchOptions(esbuildOptions);
-					let result;
-					try {
-						result = esbuildTransformSync(_code, esbuildOptions);
-					} catch (error) {
-						throw formatEsbuildError(error as TransformFailure);
-					}
-					return patchResult(result);
-				},
+				(_filePath, _code) => transformWithCompilerSync(_code, esbuildOptions),
 				(_filePath, _code) => transformDynamicImport(_filePath, _code, true),
 			],
 		);
@@ -239,20 +244,7 @@ export const transformEsmSync = (
 			filePath,
 			code,
 			[
-				(_filePath, _code) => {
-					const nativeResult = attemptOxcTransform(_code, esbuildOptions);
-					if (nativeResult) {
-						return nativeResult;
-					}
-					const patchResult = patchOptions(esbuildOptions);
-					let result;
-					try {
-						result = esbuildTransformSync(_code, esbuildOptions);
-					} catch (error) {
-						throw formatEsbuildError(error as TransformFailure);
-					}
-					return patchResult(result);
-				},
+				(_filePath, _code) => transformWithCompilerSync(_code, esbuildOptions),
 				(_filePath, _code) => transformDynamicImport(_filePath, _code, true),
 			],
 		);

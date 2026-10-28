@@ -38,30 +38,33 @@ type NativeBinding = {
 	} | null;
 };
 
+type CompilerOptions = NonNullable<TsconfigRaw['compilerOptions']>;
+
 let binding: NativeBinding | undefined | false;
 
-const loadBinding = () => {
-	if (binding === undefined) {
-		// A loader can re-enter transformation while resolving the binding.
-		binding = false;
-		const require = createRequire(import.meta.url);
-		for (const load of [
-			() => require('#native-transform'),
-			() => require('#wasm-transform'),
-		]) {
-			try {
-				const candidate: NativeBinding = loadCompiler(load);
-				if (
-					typeof candidate.transformSync === 'function'
-					&& candidate.backendVersion() === oxcBackendVersion
-				) {
-					binding = candidate;
-					break;
-				}
-			} catch {
-				// The generated loader tries native then WASM. The direct WASM
-				// entry also handles a stale native protocol or a missing loader.
+const loadBinding = (): NativeBinding | false => {
+	if (binding !== undefined) {
+		return binding;
+	}
+	// A loader can re-enter transformation while resolving the binding.
+	binding = false;
+	const require = createRequire(import.meta.url);
+	for (const load of [
+		() => require('#native-transform'),
+		() => require('#wasm-transform'),
+	]) {
+		try {
+			const candidate: NativeBinding = loadCompiler(load);
+			if (
+				typeof candidate.transformSync === 'function'
+				&& candidate.backendVersion() === oxcBackendVersion
+			) {
+				binding = candidate;
+				return binding;
 			}
+		} catch {
+			// The generated loader tries native then WASM. The direct WASM
+			// entry also handles a stale native protocol or a missing loader.
 		}
 	}
 	return binding;
@@ -99,7 +102,7 @@ const languageByExtension: Record<string, NativeOptions['lang']> = {
 	'': 'js',
 };
 
-const languageForOptions = (options: TransformOptions) => {
+const languageForOptions = (options: TransformOptions): NativeOptions['lang'] | undefined => {
 	const { loader } = options;
 	if (loader && loader !== 'default') {
 		return loader === 'ts' || loader === 'tsx' || loader === 'js' || loader === 'jsx'
@@ -109,7 +112,7 @@ const languageForOptions = (options: TransformOptions) => {
 	return languageByExtension[path.extname(options.sourcefile!.split('?')[0])];
 };
 
-const supportsOptions = (options: TransformOptions) => !(
+const supportsOptions = (options: TransformOptions): boolean => !(
 	(options.format !== 'esm' && options.format !== 'cjs')
 	|| !options.sourcefile
 	|| options.sourcemap !== true
@@ -123,7 +126,7 @@ const supportsOptions = (options: TransformOptions) => !(
 	))
 );
 
-const supportsCompilerOptions = (compilerOptions: NonNullable<TsconfigRaw['compilerOptions']>) => {
+const supportsCompilerOptions = (compilerOptions: CompilerOptions): boolean => {
 	for (const key of [
 		'alwaysStrict',
 		'strict',
@@ -139,7 +142,7 @@ const supportsCompilerOptions = (compilerOptions: NonNullable<TsconfigRaw['compi
 	return compilerOptions.target === undefined || typeof compilerOptions.target === 'string';
 };
 
-const getUseDefineForClassFields = (compilerOptions: NonNullable<TsconfigRaw['compilerOptions']>) => {
+const getUseDefineForClassFields = (compilerOptions: CompilerOptions): boolean | undefined => {
 	const configTarget = compilerOptions.target?.toLowerCase();
 	if (configTarget && !/^es(?:[356]|201[5-9]|202[0-6]|next)$/.test(configTarget)) {
 		return;
@@ -153,7 +156,7 @@ const jsxFactoryPattern = /^[A-Z_$][\w$]*(?:\.[A-Z_$][\w$]*)*$/i;
 
 const getJsxOptions = (
 	options: TransformOptions,
-	compilerOptions: NonNullable<TsconfigRaw['compilerOptions']>,
+	compilerOptions: CompilerOptions,
 ): NativeOptions['jsx'] | undefined => {
 	const configuredMode = compilerOptions.jsx;
 	if (

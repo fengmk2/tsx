@@ -192,26 +192,7 @@ fn supports_jsx_factory(factory: &str) -> bool {
         && parts.all(is_identifier_name)
 }
 
-fn transform_source(filename: &str, source: &str, options: &Options) -> Option<TransformOutput> {
-    // Module conversion stays on the compatibility backend. Sources already
-    // written as CommonJS can use Oxc without changing their module semantics.
-    let commonjs = match options.source_type.as_str() {
-        "module" => false,
-        "commonjs" => true,
-        _ => return None,
-    };
-    if !options.source_map {
-        return None;
-    }
-    let source_type = match options.lang.as_str() {
-        "ts" => SourceType::ts(),
-        "tsx" => SourceType::tsx(),
-        "js" => SourceType::mjs(),
-        "jsx" => SourceType::jsx(),
-        _ => return None,
-    }
-    .with_module(true)
-    .with_commonjs(commonjs);
+fn create_transform_options(options: &Options) -> Option<TransformOptions> {
     let mut transform_options = TransformOptions::from_target(&options.target).ok()?;
     let jsx = &options.jsx;
     let classic = jsx.runtime.is_classic();
@@ -234,20 +215,41 @@ fn transform_source(filename: &str, source: &str, options: &Options) -> Option<T
     };
     // Preserve imports used only by a classic JSX factory or fragment. Automatic
     // JSX does not use these bindings and must not retain their side effects.
-    transform_options.typescript.jsx_pragma = if classic {
-        jsx.pragma.clone().into()
+    if classic {
+        transform_options.typescript.jsx_pragma = jsx.pragma.clone().into();
+        transform_options.typescript.jsx_pragma_frag = jsx.pragma_frag.clone().into();
     } else {
-        "".into()
-    };
-    transform_options.typescript.jsx_pragma_frag = if classic {
-        jsx.pragma_frag.clone().into()
-    } else {
-        "".into()
-    };
+        transform_options.typescript.jsx_pragma = "".into();
+        transform_options.typescript.jsx_pragma_frag = "".into();
+    }
     transform_options.typescript.only_remove_type_imports = options.only_remove_type_imports;
     transform_options
         .typescript
         .remove_class_fields_without_initializer = !options.use_define_for_class_fields;
+    Some(transform_options)
+}
+
+fn transform_source(filename: &str, source: &str, options: &Options) -> Option<TransformOutput> {
+    // Module conversion stays on the compatibility backend. Sources already
+    // written as CommonJS can use Oxc without changing their module semantics.
+    let commonjs = match options.source_type.as_str() {
+        "module" => false,
+        "commonjs" => true,
+        _ => return None,
+    };
+    if !options.source_map {
+        return None;
+    }
+    let source_type = match options.lang.as_str() {
+        "ts" => SourceType::ts(),
+        "tsx" => SourceType::tsx(),
+        "js" => SourceType::mjs(),
+        "jsx" => SourceType::jsx(),
+        _ => return None,
+    }
+    .with_module(true)
+    .with_commonjs(commonjs);
+    let transform_options = create_transform_options(options)?;
 
     let allocator = Allocator::default();
     let parsed = Parser::new(&allocator, source, source_type).parse();

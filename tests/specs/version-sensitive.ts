@@ -66,27 +66,22 @@ export const versionSensitiveTests = (node: NodeApis) => describe('Version-sensi
 				'value.ts': 'export const value: string = typeof require === "function" ? "loaded" : "not-commonjs";',
 			});
 
-			const run = async (
-				nodeOptions: string[],
-				expectedEvents: unknown[],
-			) => {
-				const process = await execaNode(fixture.getPath('entry.ts'), {
+			const observerUrl = pathToFileURL(fixture.getPath('observer.mjs')).toString();
+			for (const nodeOptions of [
+				['--import', observerUrl, '--import', tsxEsmPath],
+				['--import', tsxEsmPath, '--import', observerUrl],
+			]) {
+				const result = await execaNode(fixture.getPath('entry.ts'), {
 					nodePath: node.path,
 					nodeOptions,
 					reject: false,
 				});
 
-				expect(process.exitCode).toBe(0);
-				expect(process.stderr).toBe('');
-				const stdoutLines = process.stdout.split('\n');
+				expect(result.exitCode).toBe(0);
+				expect(result.stderr).toBe('');
+				const stdoutLines = result.stdout.split('\n');
 				expect(stdoutLines[0]).toBe('entry:loaded');
-				expect(JSON.parse(stdoutLines[1])).toEqual(expectedEvents);
-			};
-			const observerUrl = pathToFileURL(fixture.getPath('observer.mjs')).toString();
-
-			await run(
-				['--import', observerUrl, '--import', tsxEsmPath],
-				[
+				expect(JSON.parse(stdoutLines[1])).toEqual([
 					{
 						hook: 'resolve',
 						specifier: pathToFileURL(fixture.getPath('entry.ts')).toString(),
@@ -107,33 +102,8 @@ export const versionSensitiveTests = (node: NodeApis) => describe('Version-sensi
 						format: 'commonjs',
 						sourceIsText: true,
 					},
-				],
-			);
-			await run(
-				['--import', tsxEsmPath, '--import', observerUrl],
-				[
-					{
-						hook: 'resolve',
-						specifier: pathToFileURL(fixture.getPath('entry.ts')).toString(),
-					},
-					{
-						hook: 'load',
-						file: 'entry.ts',
-						format: 'commonjs',
-						sourceIsText: true,
-					},
-					{
-						hook: 'resolve',
-						specifier: pathToFileURL(fixture.getPath('value.ts')).toString(),
-					},
-					{
-						hook: 'load',
-						file: 'value.ts',
-						format: 'commonjs',
-						sourceIsText: true,
-					},
-				],
-			);
+				]);
+			}
 		});
 
 		test('runs when a TypeScript pre-import registers an async loader', async () => {

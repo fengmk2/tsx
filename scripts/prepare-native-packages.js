@@ -17,12 +17,13 @@ const packageJson = JSON.parse(await fs.readFile(packageJsonPath, 'utf8'));
 const config = JSON.parse(await fs.readFile(path.join(root, 'native/transform/napi.json'), 'utf8'));
 const packageName = config.packageName ?? packageJson.name;
 const nativeDirectory = path.join(root, 'dist/native');
-const targets = config.targets.filter(target => parseTriple(target).arch !== 'wasm32');
+const targets = config.targets
+	.map(target => parseTriple(target))
+	.filter(target => target.arch !== 'wasm32');
 const artifacts = [];
 
 // Validate the complete release set before changing generated files or metadata.
-for (const target of targets) {
-	const { platformArchABI } = parseTriple(target);
+for (const { platformArchABI } of targets) {
 	const filename = `${config.binaryName}.${platformArchABI}.node`;
 	const source = path.join(nativeDirectory, filename);
 	try {
@@ -48,7 +49,7 @@ try {
 	await fs.writeFile(path.join(stagingDirectory, 'napi.json'), JSON.stringify({
 		...config,
 		packageName,
-		targets,
+		targets: targets.map(target => target.triple),
 	}));
 	await fs.writeFile(path.join(stagingDirectory, 'package.json'), JSON.stringify(packageJson));
 	await fs.mkdir(path.join(stagingDirectory, 'artifacts'));
@@ -67,10 +68,10 @@ try {
 		...options,
 		outputDir: 'artifacts',
 	});
-	for (const target of targets) {
+	for (const { platformArchABI } of targets) {
 		await fs.copyFile(
 			path.join(root, 'LICENSE'),
-			path.join(stagingDirectory, 'npm', parseTriple(target).platformArchABI, 'LICENSE'),
+			path.join(stagingDirectory, 'npm', platformArchABI, 'LICENSE'),
 		);
 	}
 
@@ -107,8 +108,8 @@ try {
 	const optionalDependencies = Object.fromEntries(
 		Object.entries(packageJson.optionalDependencies ?? {}).filter(([name]) => !name.startsWith(`${packageName}-`)),
 	);
-	for (const target of targets) {
-		optionalDependencies[`${packageName}-${parseTriple(target).platformArchABI}`] = `~${packageJson.version}`;
+	for (const { platformArchABI } of targets) {
+		optionalDependencies[`${packageName}-${platformArchABI}`] = `~${packageJson.version}`;
 	}
 	packageJson.optionalDependencies = optionalDependencies;
 	await fs.writeFile(packageJsonPath, `${JSON.stringify(packageJson, null, '\t')}\n`);
