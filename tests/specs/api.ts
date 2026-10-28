@@ -592,6 +592,48 @@ export const api = (node: NodeApis) => describe('API', () => {
 					retry: 3,
 				});
 
+				for (const backend of ['native', 'wasm']) {
+					test(`onImport excludes compiler loading with ${backend}`, async () => {
+						await using fixture = await createFixture({
+							'package.json': createPackageJson({ type: 'module' }),
+							'register.mjs': outdent`
+							import assert from 'node:assert/strict';
+							import { register } from ${JSON.stringify(tsxEsmApiPath)};
+
+							const unregister = register({
+								onImport(file) {
+									console.log(file.split('/').pop());
+								},
+							});
+							const { value } = await import('./file.ts');
+							await unregister();
+							assert.equal(value, 'function42');
+							`,
+							'file.ts': outdent`
+							import { createRequire } from 'node:module';
+							import dependency from './index.cjs';
+							const { readFileSync } = createRequire(import.meta.url)('node:fs');
+							export const value: string = typeof readFileSync + dependency;
+							`,
+							'index.cjs': 'module.exports = 42;',
+						});
+
+						const { stdout } = await execaNode(fixture.getPath('register.mjs'), [], {
+							nodePath: node.path,
+							nodeOptions: backend === 'wasm' ? ['--no-addons'] : [],
+							env: {
+								TSX_DISABLE_CACHE: '1',
+							},
+						});
+						expectImportedFiles(stdout, [
+							'file.ts',
+							'index.cjs',
+							// Async loader hooks do not observe createRequire() calls.
+							...(node.supports.moduleRegisterHooksCjsReload ? ['node:fs'] : []),
+						]);
+					});
+				}
+
 				describe('tsconfig', () => {
 					test('should ignore detected unresolvable tsconfig', async () => {
 						await using fixture = await createFixture({

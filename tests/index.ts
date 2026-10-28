@@ -1,4 +1,7 @@
-import { describe, setProcessTimeout } from 'manten';
+import { fileURLToPath } from 'node:url';
+import {
+	describe, test, expect, setProcessTimeout,
+} from 'manten';
 import { createNode } from './utils/tsx';
 import { nodeVersions } from './utils/node-versions';
 import { smoke } from './specs/smoke';
@@ -12,12 +15,26 @@ import { ptyShellSpec } from './specs/pty-shell';
 import { tsconfig } from './specs/tsconfig';
 import { transformSpec } from './specs/transform';
 import { transformCacheSpec } from './specs/transform-cache';
+import { oxcTransformSpec } from './specs/oxc-transform';
 import { commonJsModeContracts } from './specs/commonjs-mode-contracts';
 import { nodeCapabilitiesSpec } from './specs/node-capabilities';
 import { versionSensitiveTests } from './specs/version-sensitive';
 import { resolutionPriority } from './specs/resolution-priority';
 import { esmHookResolve } from './specs/esm-hook-resolve';
 import { apiDeclarations } from './specs/api-declarations';
+
+const wasmTransformSpec = (node: Awaited<ReturnType<typeof createNode>>) => test('WASM transform backend', async () => {
+	const { exitCode } = await node.tsx([
+		'--no-addons',
+		fileURLToPath(new URL('transform.ts', import.meta.url)),
+	], {
+		env: {
+			TESTONLY: 'Oxc transform',
+			DEBUG: undefined,
+		},
+	});
+	expect(exitCode).toBe(0);
+}, 60_000);
 
 (async () => {
 	// Prevent stuck CI runs
@@ -29,12 +46,14 @@ import { apiDeclarations } from './specs/api-declarations';
 		await ptyShellSpec();
 		await transformCacheSpec();
 		await transformSpec();
+		await oxcTransformSpec();
 		await nodeCapabilitiesSpec();
 		await esmHookResolve();
 		await apiDeclarations();
 
 		const [primaryNodeVersion, ...compatNodeVersions] = nodeVersions;
 		const primaryNode = await createNode(primaryNodeVersion);
+		await wasmTransformSpec(primaryNode);
 
 		// The primary Node version runs all suites sequentially.
 		// Process-heavy suites (cli signals, watch file watchers, PTY shells)
@@ -51,11 +70,24 @@ import { apiDeclarations } from './specs/api-declarations';
 			await tsconfig(primaryNode);
 		});
 
-		// Other Node versions only run version-sensitive tests
+		// Other Node versions exercise both loader boundaries and the actual
+		// native/compiler target selected inside that Node process.
 		for (const nodeVersion of compatNodeVersions) {
 			const node = await createNode(nodeVersion);
-			await describe(`Node ${node.version}`, () => {
-				versionSensitiveTests(node);
+			await describe(`Node ${node.version}`, async () => {
+				await versionSensitiveTests(node);
+				await test('transform backends', async () => {
+					const { exitCode } = await node.tsx([
+						fileURLToPath(new URL('transform.ts', import.meta.url)),
+					], {
+						env: {
+							TESTONLY: undefined,
+							DEBUG: undefined,
+						},
+					});
+					expect(exitCode).toBe(0);
+				}, 60_000);
+				await wasmTransformSpec(node);
 			});
 		}
 	});

@@ -1,0 +1,268 @@
+name: Native packages
+
+on:
+  pull_request:
+  workflow_dispatch:
+  workflow_call:
+    outputs:
+      native-artifact:
+        description: Assembled native and WASM files for dist/native
+        value: ${{ jobs.assemble.outputs.native-artifact }}
+      package-artifact:
+        description: Packed main package and separate native platform packages
+        value: ${{ jobs.assemble.outputs.package-artifact }}
+
+permissions:
+  contents: read
+
+jobs:
+  native:
+    name: Native (${{ matrix.target }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-15
+            target: aarch64-apple-darwin
+          - os: macos-15-intel
+            target: x86_64-apple-darwin
+          - os: windows-2022
+            target: x86_64-pc-windows-msvc
+          - os: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+          - os: ubuntu-22.04-arm
+            target: aarch64-unknown-linux-gnu
+          - os: ubuntu-22.04
+            target: x86_64-unknown-linux-musl
+            image: node:24.15.0-alpine@sha256:8e2c930fda481a6ec141fe5a88e8c249c69f8102fe98af505f38c081649ea749
+          - os: ubuntu-22.04-arm
+            target: aarch64-unknown-linux-musl
+            image: node:24.15.0-alpine@sha256:693101c77e947e45e001910202dcb37a659c0b1a4c27619848f1b8b7eaee0def
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Install pnpm
+        if: ${{ !matrix.image }}
+        uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4.2.0
+
+      - name: Setup Node.js
+        if: ${{ !matrix.image }}
+        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        if: ${{ !matrix.image }}
+        run: pnpm install --frozen-lockfile
+
+      - name: Build JavaScript
+        if: ${{ !matrix.image }}
+        run: pnpm build:js
+
+      - name: Build native target
+        if: ${{ !matrix.image }}
+        env:
+          NATIVE_TARGET: ${{ matrix.target }}
+        run: node scripts/build-native.js --target "$NATIVE_TARGET"
+        shell: bash
+
+      - name: Check native transforms
+        if: ${{ !matrix.image }}
+        run: node ./dist/cli.mjs tests/transform.ts
+
+      # Run musl builds and checks inside Alpine on the matching CPU architecture.
+      # GitHub's JavaScript actions run on the glibc host, outside this container.
+      - name: Build and check musl target
+        if: ${{ matrix.image }}
+        env:
+          NATIVE_TARGET: ${{ matrix.target }}
+          NATIVE_IMAGE: ${{ matrix.image }}
+        run: |
+          docker run --rm --volume "$PWD:/work" --workdir /work \
+            --env CI=true --env NATIVE_TARGET "$NATIVE_IMAGE" sh -euc '
+              apk add --no-cache build-base python3 curl git
+              curl --fail --silent --show-error https://sh.rustup.rs --output /tmp/rustup.sh
+              sh /tmp/rustup.sh -y --profile minimal --default-toolchain none
+              export PATH="$HOME/.cargo/bin:$PATH"
+              export CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER=gcc
+              export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=gcc
+              npm install --global pnpm@10.9.0
+              pnpm install --frozen-lockfile
+              pnpm build:js
+              node scripts/build-native.js --target "$NATIVE_TARGET"
+              node ./dist/cli.mjs tests/transform.ts
+            '
+
+      - name: Upload native target
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: native-build-${{ matrix.target }}
+          path: dist/native/
+          if-no-files-found: error
+          retention-days: 7
+
+  wasm:
+    name: WASM fallback
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4.2.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build JavaScript
+        run: pnpm build:js
+
+      - name: Build WASM
+        run: node scripts/build-native.js --target wasm32-wasip1-threads
+
+      - name: Check transforms without native addons
+        run: node ./dist/cli.mjs --no-addons tests/transform.ts
+
+      - name: Upload WASM
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: native-build-wasm32-wasip1-threads
+          path: dist/native/
+          if-no-files-found: error
+          retention-days: 7
+
+  assemble:
+    name: Assemble package
+    needs: [native, wasm]
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    outputs:
+      native-artifact: native-bindings
+      package-artifact: native-package
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4.2.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build JavaScript
+        run: pnpm build:js
+
+      - name: Download target artifacts
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: native-build-*
+          path: native-artifacts
+
+      - name: Check artifact assembly
+        run: |
+          node ./dist/cli.mjs tests/native-assembly.ts
+          node ./dist/cli.mjs tests/native-release.ts
+
+      - name: Assemble all targets
+        run: node scripts/assemble-native.js --artifacts-dir native-artifacts
+
+      - name: Upload assembled bindings
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: native-bindings
+          path: dist/native/
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Prepare platform packages and pack without rebuilding
+        run: |
+          node scripts/prepare-native-packages.js --require-all
+          pnpm exec clean-pkg-json
+          node scripts/pack-native.js --output-dir package-artifact
+
+      - name: Upload packed package
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: native-package
+          path: package-artifact/
+          if-no-files-found: error
+          retention-days: 7
+
+  package-smoke:
+    name: Packed package (${{ matrix.os }}, Node ${{ matrix.node }})
+    needs: assemble
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            node: 18.0.0
+          - os: ubuntu-22.04
+            node: 18.20.8
+          - os: ubuntu-22.04
+            node: 24.15.0
+          - os: macos-15
+            node: 24.15.0
+          - os: macos-15-intel
+            node: 24.15.0
+          - os: windows-2022
+            node: 24.15.0
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4.2.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build JavaScript test runner
+        run: pnpm build:js
+
+      - name: Select runtime for the package check
+        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: Download packed package
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: native-package
+          path: package-artifact
+
+      - name: Check native, WASM, and compatibility fallback
+        run: node ./dist/cli.mjs tests/native-packaging.ts package-artifact

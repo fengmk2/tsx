@@ -26,6 +26,8 @@ For `--json`, use `pnpm --silent` so pnpm's script banner stays out of stdout an
 | `esm-ts` | ✅ | tsx CLI | Transform + resolution hot path (`--specifier` applies) |
 | `native-ts` | ✅ | `node` | Node's native type stripping — reference floor (ignores `--compare`) |
 | `cjs-require` | | tsx CLI | The `tsx/cjs` require path |
+| `esm-fallback` | | tsx CLI | ESM namespace tree: Oxc eligibility checks, then esbuild |
+| `cjs-fallback` | | tsx CLI | CommonJS namespace tree: Oxc eligibility checks, then esbuild |
 | `cjs-interop` | | tsx CLI | ESM importing N CommonJS `node_modules` packages (the #809 surface) |
 
 Running with no scenario names runs the **default set**; name any scenario (e.g. `pnpm benchmark cjs-interop`) to run it explicitly. All tsx scenarios run through the **tsx CLI** (not `--import`) for consistency with real usage; the CLI's extra Node spawn is constant across rows and visible against `node-baseline`.
@@ -74,4 +76,91 @@ Scenarios below their `minNodeVersion` (e.g. `native-ts` under 22.18.0) are skip
 
 ## Reproducibility
 
-The tsx transform cache is reset before each tsx scenario's warmup to avoid stale-file skew. Pass `--cache-entries` to instead create an isolated cache, seed it with unrelated entries, and retain it across warmup and timed runs. This mode measures cache initialization and warm lookup scaling without clearing or changing the user's cache. Node baseline scenarios are unaffected. Runs are interleaved after warmup.
+The tsx transform cache is reset before each tsx scenario's warmup to avoid stale-file skew. Pass `--cache-entries` to instead create an isolated cache for each implementation, seed it with unrelated entries, and retain it across warmup and timed runs. This mode measures cache initialization and warm lookup scaling without clearing or changing the user's cache. Node baseline scenarios are unaffected. Runs are interleaved after warmup, with implementation order reversed on alternate rounds.
+
+## Oxc fallback measurements
+
+The opt-in `esm-fallback` and `cjs-fallback` scenarios put a mutable TypeScript
+namespace in every module, including the entry. Oxc parses each source and rejects
+it before transformation. The esbuild JS API then transforms the original source.
+Each graph checks its computed total before reporting metrics.
+
+```sh
+node ./dist/cli.mjs scripts/benchmark/index.ts \
+  esm-fallback cjs-fallback --compare /path/to/esbuild-only-checkout \
+  --modules 1000 --runs 15 --cold --json
+```
+
+Repeat with `NODE_OPTIONS=--no-addons` to measure WASM eligibility checks before
+esbuild. Apply this setting to both implementations. Omit `--cold` to measure
+cache hits. Use a short, disposable `TMPDIR` for cache isolation on macOS.
+Each workload has the requested module count plus one entry module.
+
+This measures startup when every source requires fallback. It includes compiler
+initialization, eligibility parsing, esbuild, resolution, execution, and CLI
+startup. It does not isolate one transform call or predict a mixed project's
+performance. Options rejected before Oxc loads can have a lower cost.
+See [the recorded comparison](../../notes/tsx/oxc-evaluation.md#fallback-overhead)
+for the baseline definition and results. Keep raw JSON outside version control.
+
+## RSSHub startup
+
+[RSSHub](https://github.com/DIYgod/RSSHub) uses `tsx` for its development server
+and route generation. Its development server imports the route source tree.
+The RSSHub benchmark measures CLI startup through the first successful local
+`/healthz` response, including module loading, application initialization, and
+the first health request. It omits the watch process and debugger.
+
+Prepare a checkout of RSSHub revision
+`238226edda3dfcc948d6531971efaaf890865d0d` and install its locked dependencies:
+
+```sh
+PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 PUPPETEER_SKIP_DOWNLOAD=1 \
+  pnpm install --frozen-lockfile --ignore-scripts
+```
+
+Build the current tsx checkout, including native and WASM bindings, and a
+separate esbuild-only checkout of `8e4b900`. Then run from the current checkout:
+
+```sh
+node scripts/benchmark/rsshub.js \
+  --project-dir /path/to/RSSHub \
+  --baseline-dir /path/to/esbuild-only-tsx \
+  --runs 7
+```
+
+Repeat with `--no-addons` for WASM. This flag applies to both implementations.
+The script checks the selected Oxc format before measuring. JSON goes to stdout;
+progress goes to stderr. Keep raw output outside version control.
+
+Each sample starts a fresh process. Cold runs clear an isolated transform cache;
+warm runs reuse the cache from an untimed warmup. The warmup gets one second after
+readiness for pending cache writes to finish. Samples alternate implementation
+order. Operating-system file caches are not cleared.
+
+The server uses a minimal environment, memory caching, an empty dotenv file, and
+available loopback ports. Remote configuration and trace sampling are disabled.
+The benchmark sends no feed requests and terminates each process group before
+starting the next sample. It requires POSIX process-group support. Run it without
+concurrent builds or tests. See the
+[recorded RSSHub results](../../notes/tsx/oxc-evaluation.md#rsshub-development-startup)
+for the measured compiler routes and limitations.
+
+## Oxc feasibility measurements
+
+The standalone Oxc comparison uses an external candidate install. It does not add a transformer dependency to tsx:
+
+```sh
+oxc_candidate_dir=$(mktemp -d)
+npm install --prefix "$oxc_candidate_dir" --no-audit --no-fund oxc-transform@0.155.0 @oxc-node/core@1.0.1
+pnpm build
+node scripts/benchmark/oxc.js --candidate-dir "$oxc_candidate_dir" --runs 7 --modules 1000 --iterations 500 > "$oxc_candidate_dir/benchmark.json"
+```
+
+Run this on an otherwise idle machine. The JSON records the Node version, package versions, CPU, all timed samples, medians, and minima. `--runs`, `--modules`, and `--iterations` accept positive integers; defaults are 5, 300, and 200.
+
+The transform measurements compare synchronous esbuild ESM and CommonJS, Oxc ESM, and Oxc followed by esbuild CommonJS. Both backends generate source maps. The two-pass case passes Oxc's source map into esbuild for composition. Each case receives 20 untimed transforms, then timed batches run in alternating order.
+
+Runtime measurements compare `node --import` hooks on an empty module and a TypeScript ESM tree. They include fresh-process startup, resolution, transformation, and execution; they exclude CLI wrappers. Each process uses the same Node binary. The runner verifies the tree's computed value, alternates implementation order, and isolates each implementation's temporary cache. It compares warm tsx disk cache, cold tsx disk cache, disabled tsx disk cache, and oxc-node (which has no transform cache). Temporary fixtures and caches are removed when the runner exits normally or throws.
+
+These are synthetic performance probes, not compatibility tests. In particular, fast Oxc-only ESM output does not prove equivalent tsx behavior, and a two-pass transform cannot recover runtime imports that its first pass has already removed. Use the semantic evaluation results when deciding whether a candidate can replace tsx's backend.

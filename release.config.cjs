@@ -1,6 +1,13 @@
 const outdent = require('outdent');
 
 module.exports = {
+	plugins: [
+		'@semantic-release/commit-analyzer',
+		'@semantic-release/release-notes-generator',
+		'./scripts/release-native.js',
+		'@semantic-release/npm',
+		'@semantic-release/github',
+	],
 	// Append links to other published releases at the bottom of the GitHub release notes.
 	addReleases: 'bottom',
 	// The plugin discovers issues from closing keywords in release PR bodies or commit

@@ -52,6 +52,10 @@ jobs:
       - name: Test
         run: pnpm test
 
+      - name: Test native compiler
+        working-directory: native/transform
+        run: cargo test --release --locked
+
       - name: Type check
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: pnpm type-check

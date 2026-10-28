@@ -22,8 +22,17 @@ node_modules
 # Cache
 .eslintcache
 
+# Raw benchmark samples
+/notes/tsx/*-benchmark.json
+
 # Distribution
 dist
+
+# Native transformer build output
+native/transform/target
+
+# Generated napi-rs platform packages
+/npm
 
 # Link config
 link.config.json

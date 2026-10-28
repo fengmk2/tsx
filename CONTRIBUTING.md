@@ -92,14 +92,44 @@ pnpm i     # Install dependencies
 
 ### Building
 
-Build the source code with:
+The draft Oxc implementation builds native and WASM transformers with napi-rs.
+Use the Node version in `.nvmrc` and install Rust with `rustup`. Cargo uses the
+pinned toolchain and WASI target in `native/transform/rust-toolchain.toml`.
+Registry package consumers do not compile Rust.
 
 ```bash
 pnpm build # Compiles to `dist`
 ```
 
+`pnpm build:js` builds the JavaScript entries. `pnpm build:native` builds the host
+native transformer and the WASM fallback in `dist/native`. `pnpm build:wasm`
+builds only WASM. To build one native target, run
+`node scripts/build-native.js --target <rust-target-triple>`.
+
+The generated loader selects the matching native binary, then the bundled WASM
+compiler. Unsupported syntax or unavailable compilers use esbuild with the
+original source. Older Node versions without compatible WASI support retain the
+native and esbuild paths.
+
+The native CI workflow builds each configured target, then uses napi-rs
+`create-npm-dirs` and `artifacts` to generate platform packages in `npm/`.
+The main package declares these as optional dependencies. Package managers select
+native packages by operating system, CPU, and libc. WASM stays in the main package
+and remains available with `--no-addons` or omitted optional dependencies.
+
+`node scripts/prepare-native-packages.js` prepares the local host package and
+updates package metadata. CI adds `--require-all` to require all native targets.
+`node scripts/pack-native.js --output-dir <new-directory>` packs the main package
+and available native packages without publishing. Generated packages are ignored
+by Git; the main tarball excludes all `.node` files.
+
+The release job supplies `TSX_PREBUILT_NATIVE_DIR` to reuse checked artifacts.
+It publishes the platform packages before the main package. The package prefix
+comes from `native/transform/napi.json`; publishing requires ownership and npm
+authentication for each generated package.
+
 > [!TIP]
-> Temporarily disable minification by removing `--minify` in `package.json#scripts.build` for easier debugging.
+> Temporarily disable minification by removing `--minify` in `package.json#scripts.build:js` for easier debugging.
 
 
 ### Linting and type-checking

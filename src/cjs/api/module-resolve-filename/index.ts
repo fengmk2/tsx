@@ -1,6 +1,7 @@
 import Module from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { resolvePathAlias, type TsconfigResult } from 'get-tsconfig';
+import { isCompilerLoading } from '../../../utils/compiler-loading.js';
 import {
 	isFilePath,
 	fileUrlPrefix,
@@ -56,7 +57,7 @@ export const createResolveFilename = (
 	parent,
 	...restOfArgs
 ) => {
-	if (state.enabled === false) {
+	if (state.enabled === false || isCompilerLoading()) {
 		return nextResolve(request, parent, ...restOfArgs);
 	}
 

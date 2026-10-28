@@ -24,6 +24,7 @@ import {
 	cacheConfig,
 	patchOptions,
 } from './get-esbuild-options.js';
+import { attemptOxcTransform, oxcBackendVersion } from './oxc.js';
 
 const formatEsbuildError = (
 	error: TransformFailure,
@@ -34,6 +35,24 @@ const formatEsbuildError = (
 	// @ts-expect-error deleting non-option property
 	delete error.warnings;
 	throw error;
+};
+
+const transformWithCompilerSync = (
+	code: string,
+	options: TransformOptions,
+): Transformed => {
+	const nativeResult = attemptOxcTransform(code, options);
+	if (nativeResult) {
+		return nativeResult;
+	}
+	const patchResult = patchOptions(options);
+	let result;
+	try {
+		result = esbuildTransformSync(code, options);
+	} catch (error) {
+		throw formatEsbuildError(error as TransformFailure);
+	}
+	return patchResult(result);
 };
 
 const getImportMeta = (
@@ -127,6 +146,7 @@ export const transformSync = (
 		url,
 		JSON.stringify(esbuildOptions),
 		esbuildVersion,
+		oxcBackendVersion,
 		transformDynamicImportVersion,
 	].join('-'));
 	let transformed = cache.get(hash);
@@ -136,16 +156,7 @@ export const transformSync = (
 			filePathOrUrl,
 			code,
 			[
-				(_filePath, _code) => {
-					const patchResult = patchOptions(esbuildOptions);
-					let result;
-					try {
-						result = esbuildTransformSync(_code, esbuildOptions);
-					} catch (error) {
-						throw formatEsbuildError(error as TransformFailure);
-					}
-					return patchResult(result);
-				},
+				(_filePath, _code) => transformWithCompilerSync(_code, esbuildOptions),
 				(_filePath, _code) => transformDynamicImport(_filePath, _code, true),
 			],
 		);
@@ -173,6 +184,7 @@ export const transform = async (
 		code,
 		JSON.stringify(esbuildOptions),
 		esbuildVersion,
+		oxcBackendVersion,
 		transformDynamicImportVersion,
 	].join('-'));
 	let transformed = cache.get(hash);
@@ -183,6 +195,10 @@ export const transform = async (
 			code,
 			[
 				async (_filePath, _code) => {
+					const nativeResult = attemptOxcTransform(_code, esbuildOptions);
+					if (nativeResult) {
+						return nativeResult;
+					}
 					const patchResult = patchOptions(esbuildOptions);
 					let result;
 					try {
@@ -218,6 +234,7 @@ export const transformEsmSync = (
 		code,
 		JSON.stringify(esbuildOptions),
 		esbuildVersion,
+		oxcBackendVersion,
 		transformDynamicImportVersion,
 	].join('-'));
 	let transformed = cache.get(hash);
@@ -227,16 +244,7 @@ export const transformEsmSync = (
 			filePath,
 			code,
 			[
-				(_filePath, _code) => {
-					const patchResult = patchOptions(esbuildOptions);
-					let result;
-					try {
-						result = esbuildTransformSync(_code, esbuildOptions);
-					} catch (error) {
-						throw formatEsbuildError(error as TransformFailure);
-					}
-					return patchResult(result);
-				},
+				(_filePath, _code) => transformWithCompilerSync(_code, esbuildOptions),
 				(_filePath, _code) => transformDynamicImport(_filePath, _code, true),
 			],
 		);

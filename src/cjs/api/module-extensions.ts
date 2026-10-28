@@ -9,6 +9,7 @@ import { transformDynamicImport } from '../../utils/transform/transform-dynamic-
 import { isESM } from '../../utils/es-module-lexer.js';
 import { shouldApplySourceMap, inlineSourceMap } from '../../source-map.js';
 import { parent } from '../../utils/ipc/client.js';
+import { isCompilerLoading } from '../../utils/compiler-loading.js';
 import { logCjs as log } from '../../utils/debug.js';
 import { isFeatureSupported, requireEsm } from '../../utils/node-features.js';
 import { getNearestPackageTypeSync } from '../../esm/hook/package-json.js';
@@ -121,7 +122,7 @@ export const createExtensions = (
 		module: Module,
 		filePath: string,
 	) => {
-		if (state.enabled === false) {
+		if (state.enabled === false || isCompilerLoading()) {
 			return defaultLoader(module, filePath);
 		}
 
